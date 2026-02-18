@@ -1,0 +1,531 @@
+{
+  "genericas": [
+    {
+      "id": 1,
+      "text": "¿Cuál es su color favorito?",
+      "type": "text"
+    },
+    {
+      "id": 2,
+      "text": "¿Cuál es su comida favorita?",
+      "type": "text"
+    },
+    {
+      "id": 3,
+      "text": "¿Prefiere playa o montaña?",
+      "type": "multiple",
+      "options": ["Playa", "Montaña"]
+    },
+    {
+      "id": 4,
+      "text": "¿Es una persona madrugadora?",
+      "type": "boolean"
+    },
+    {
+      "id": 5,
+      "text": "¿Cuál es su película favorita?",
+      "type": "text"
+    },
+    {
+      "id": 6,
+      "text": "¿Prefiere perros o gatos?",
+      "type": "multiple",
+      "options": ["Perros", "Gatos", "Ambos", "Ninguno"]
+    },
+    {
+      "id": 7,
+      "text": "¿Le gusta el café?",
+      "type": "boolean"
+    },
+    {
+      "id": 8,
+      "text": "¿Cuál es su pasatiempo favorito?",
+      "type": "text"
+    },
+    {
+      "id": 9,
+      "text": "¿Prefiere verano o invierno?",
+      "type": "multiple",
+      "options": ["Verano", "Invierno"]
+    },
+    {
+      "id": 10,
+      "text": "¿Cuántos hermanos tiene?",
+      "type": "text"
+    },
+    {
+      "id": 11,
+      "text": "¿Le gusta bailar?",
+      "type": "boolean"
+    },
+    {
+      "id": 12,
+      "text": "¿Cuál es su género musical favorito?",
+      "type": "text"
+    },
+    {
+      "id": 13,
+      "text": "¿Prefiere dulce o salado?",
+      "type": "multiple",
+      "options": ["Dulce", "Salado"]
+    },
+    {
+      "id": 14,
+      "text": "¿Es una persona organizada?",
+      "type": "boolean"
+    },
+    {
+      "id": 15,
+      "text": "¿Cuál es su deporte favorito?",
+      "type": "text"
+    },
+    {
+      "id": 16,
+      "text": "¿Prefiere leer libros o ver películas?",
+      "type": "multiple",
+      "options": ["Leer libros", "Ver películas", "Ambos por igual"]
+    },
+    {
+      "id": 17,
+      "text": "¿Le gusta cocinar?",
+      "type": "boolean"
+    },
+    {
+      "id": 18,
+      "text": "¿Cuál es su estación del año favorita?",
+      "type": "multiple",
+      "options": ["Primavera", "Verano", "Otoño", "Invierno"]
+    },
+    {
+      "id": 19,
+      "text": "¿Prefiere ciudad o campo?",
+      "type": "multiple",
+      "options": ["Ciudad", "Campo"]
+    },
+    {
+      "id": 20,
+      "text": "¿Cuál es su lugar favorito del mundo?",
+      "type": "text"
+    },
+    {
+      "id": 21,
+      "text": "¿Le gusta viajar?",
+      "type": "boolean"
+    },
+    {
+      "id": 22,
+      "text": "¿Cuál es su serie favorita?",
+      "type": "text"
+    },
+    {
+      "id": 23,
+      "text": "¿Prefiere mañana, tarde o noche?",
+      "type": "multiple",
+      "options": ["Mañana", "Tarde", "Noche"]
+    },
+    {
+      "id": 24,
+      "text": "¿Le da miedo hablar en público?",
+      "type": "boolean"
+    },
+    {
+      "id": 25,
+      "text": "¿Cuál es su bebida favorita?",
+      "type": "text"
+    },
+    {
+      "id": 26,
+      "text": "¿Prefiere frío o calor?",
+      "type": "multiple",
+      "options": ["Frío", "Calor"]
+    },
+    {
+      "id": 27,
+      "text": "¿Le gusta los conciertos?",
+      "type": "boolean"
+    },
+    {
+      "id": 28,
+      "text": "¿Cuál es su libro favorito?",
+      "type": "text"
+    },
+    {
+      "id": 29,
+      "text": "¿Prefiere desayuno, almuerzo o cena?",
+      "type": "multiple",
+      "options": ["Desayuno", "Almuerzo", "Cena"]
+    },
+    {
+      "id": 30,
+      "text": "¿Es una persona tímida?",
+      "type": "boolean"
+    },
+    {
+      "id": 31,
+      "text": "¿Cuál es su superpoder favorito?",
+      "type": "text"
+    },
+    {
+      "id": 32,
+      "text": "¿Prefiere ir al gimnasio o hacer deporte al aire libre?",
+      "type": "multiple",
+      "options": ["Gimnasio", "Aire libre", "No hace deporte"]
+    },
+    {
+      "id": 33,
+      "text": "¿Le gusta el picante?",
+      "type": "boolean"
+    },
+    {
+      "id": 34,
+      "text": "¿Cuál es su canción favorita?",
+      "type": "text"
+    },
+    {
+      "id": 35,
+      "text": "¿Prefiere salir con amigos o quedarse en casa?",
+      "type": "multiple",
+      "options": ["Salir con amigos", "Quedarse en casa", "Depende del día"]
+    },
+    {
+      "id": 36,
+      "text": "¿Le gustan las sorpresas?",
+      "type": "boolean"
+    },
+    {
+      "id": 37,
+      "text": "¿Cuál es su mayor miedo?",
+      "type": "text"
+    },
+    {
+      "id": 38,
+      "text": "¿Prefiere pizza o hamburguesa?",
+      "type": "multiple",
+      "options": ["Pizza", "Hamburguesa", "Ambas", "Ninguna"]
+    },
+    {
+      "id": 39,
+      "text": "¿Se considera una persona romántica?",
+      "type": "boolean"
+    },
+    {
+      "id": 40,
+      "text": "¿Cuál es su ciudad favorita?",
+      "type": "text"
+    },
+    {
+      "id": 41,
+      "text": "¿Prefiere trabajar solo o en equipo?",
+      "type": "multiple",
+      "options": ["Solo", "En equipo", "Depende de la tarea"]
+    },
+    {
+      "id": 42,
+      "text": "¿Le gusta la fotografía?",
+      "type": "boolean"
+    },
+    {
+      "id": 43,
+      "text": "¿Cuál es la comida que más odia?",
+      "type": "text"
+    },
+    {
+      "id": 44,
+      "text": "¿Prefiere té o café?",
+      "type": "multiple",
+      "options": ["Té", "Café", "Ninguno", "Ambos"]
+    },
+    {
+      "id": 45,
+      "text": "¿Es puntual?",
+      "type": "boolean"
+    },
+    {
+      "id": 46,
+      "text": "¿Cuál es su talento oculto?",
+      "type": "text"
+    },
+    {
+      "id": 47,
+      "text": "¿Prefiere vacaciones en la playa, en la montaña o en la ciudad?",
+      "type": "multiple",
+      "options": ["Playa", "Montaña", "Ciudad"]
+    },
+    {
+      "id": 48,
+      "text": "¿Le gustaria ser famoso?",
+      "type": "boolean"
+    },
+    {
+      "id": 49,
+      "text": "¿A qué famoso le gustaría conocer?",
+      "type": "text"
+    },
+    {
+      "id": 50,
+      "text": "¿Prefiere Android o iPhone?",
+      "type": "multiple",
+      "options": ["Android", "iPhone", "Otro"]
+    },
+    {
+      "id": 51,
+      "text": "¿Se considera buena persona cocinando?",
+      "type": "boolean"
+    },
+    {
+      "id": 52,
+      "text": "¿Cuál es su bebida alcoholica favorito?",
+      "type": "text"
+    },
+    {
+      "id": 53,
+      "text": "¿Cual es su forma favorita para comunicarse?",
+      "type": "multiple",
+      "options": ["Redes sociales", "Llamadas", "Mensajes de texto", "En persona"]
+    },
+    {
+      "id": 54,
+      "text": "¿Le gusta el chocolate?",
+      "type": "boolean"
+    },
+    {
+      "id": 55,
+      "text": "¿Cuál es su recuerdo favorito de la infancia?",
+      "type": "text"
+    },
+    {
+      "id": 56,
+      "text": "¿Prefiere películas de acción, comedia, terror o romance?",
+      "type": "multiple",
+      "options": ["Acción", "Comedia", "Terror", "Romance"]
+    },
+    {
+      "id": 57,
+      "text": "¿Le gusta cantar?",
+      "type": "boolean"
+    },
+    {
+      "id": 58,
+      "text": "¿En qué país quisiera vivir?",
+      "type": "text"
+    },
+    {
+      "id": 59,
+      "text": "¿Prefiere ver deportes o practicarlos?",
+      "type": "multiple",
+      "options": ["Verlos", "Practicarlos", "Ambos", "Ninguno"]
+    },
+    {
+      "id": 60,
+      "text": "¿Le da miedo la oscuridad?",
+      "type": "boolean"
+    },
+    {
+      "id": 61,
+      "text": "¿Cuál es su marca de ropa favorita?",
+      "type": "text"
+    },
+    {
+      "id": 62,
+      "text": "¿Prefiere ahorrar o gastar el dinero?",
+      "type": "multiple",
+      "options": ["Ahorrar", "Gastar", "Mitad y mitad"]
+    },
+    {
+      "id": 63,
+      "text": "¿Le gusta ir de compras?",
+      "type": "boolean"
+    },
+    {
+      "id": 64,
+      "text": "¿Cuál es su postre favorito?",
+      "type": "text"
+    },
+    {
+      "id": 65,
+      "text": "¿Prefiere estar en silencio o con música de fondo?",
+      "type": "multiple",
+      "options": ["Silencio", "Música de fondo"]
+    },
+    {
+      "id": 66,
+      "text": "¿Se considera impulsivo?",
+      "type": "boolean"
+    },
+    {
+      "id": 67,
+      "text": "¿Cuál es su red social favorita?",
+      "type": "text"
+    },
+    {
+      "id": 68,
+      "text": "¿Prefiere pagar en efectivo o con tarjeta?",
+      "type": "multiple",
+      "options": ["Efectivo", "Tarjeta", "Transferencia"]
+    },
+    {
+      "id": 69,
+      "text": "¿Le gusta el ejercicio?",
+      "type": "boolean"
+    },
+    {
+      "id": 70,
+      "text": "¿Qué profesion es su favorita?",
+      "type": "text"
+    },
+    {
+      "id": 71,
+      "text": "¿Prefiere dormir con ruido o en silencio?",
+      "type": "multiple",
+      "options": ["Con ruido", "En silencio", "Con música suave"]
+    },
+    {
+      "id": 72,
+      "text": "¿Se considera una persona paciente?",
+      "type": "boolean"
+    },
+    {
+      "id": 73,
+      "text": "¿Cuál es su juego de mesa favorito?",
+      "type": "text"
+    },
+    {
+      "id": 74,
+      "text": "¿Prefiere celebrar su cumpleaños con muchos amigos o en familia pequeña?",
+      "type": "multiple",
+      "options": ["Muchos amigos", "Familia pequeña", "Solo", "Sin celebración"]
+    },
+    {
+      "id": 75,
+      "text": "¿Le gusta madrugar los fines de semana?",
+      "type": "boolean"
+    },
+    {
+      "id": 76,
+      "text": "¿Cuál es su videojuego favorito?",
+      "type": "text"
+    },
+    {
+      "id": 77,
+      "text": "¿Prefiere ropa cómoda o ropa elegante?",
+      "type": "multiple",
+      "options": ["Ropa cómoda", "Ropa elegante", "Depende de la ocasión"]
+    },
+    {
+      "id": 78,
+      "text": "¿Le gusta el mar?",
+      "type": "boolean"
+    },
+    {
+      "id": 79,
+      "text": "¿Cuál es su actor o actriz favorito?",
+      "type": "text"
+    },
+    {
+      "id": 80,
+      "text": "¿Prefiere hacer planes o improvisar?",
+      "type": "multiple",
+      "options": ["Hacer planes", "Improvisar", "Depende del momento"]
+    },
+    {
+      "id": 81,
+      "text": "¿Le gustan las alturas?",
+      "type": "boolean"
+    },
+    {
+      "id": 82,
+      "text": "¿Cuál es su plato típico favorito de su país?",
+      "type": "text"
+    },
+    {
+      "id": 83,
+      "text": "¿Prefiere comida saludable o comida chatarra?",
+      "type": "multiple",
+      "options": ["Saludable", "Chatarra", "Le da igual"]
+    },
+    {
+      "id": 84,
+      "text": "¿Se considera una persona creativa?",
+      "type": "boolean"
+    },
+    {
+      "id": 85,
+      "text": "¿Cuál es su aplicación favorita del celular?",
+      "type": "text"
+    },
+    {
+      "id": 86,
+      "text": "¿Prefiere salir de noche o de día?",
+      "type": "multiple",
+      "options": ["De noche", "De día"]
+    },
+    {
+      "id": 87,
+      "text": "¿Le gusta la lluvia?",
+      "type": "boolean"
+    },
+    {
+      "id": 88,
+      "text": "¿Qué materia era su favorita en la escuela?",
+      "type": "text"
+    },
+    {
+      "id": 89,
+      "text": "¿Prefiere ver el amanecer o el atardecer?",
+      "type": "multiple",
+      "options": ["Amanecer", "Atardecer"]
+    },
+    {
+      "id": 90,
+      "text": "¿Le gusta acampar?",
+      "type": "boolean"
+    },
+    {
+      "id": 91,
+      "text": "¿Cuál es su canción que siempre le sube el ánimo?",
+      "type": "text"
+    },
+    {
+      "id": 92,
+      "text": "¿Prefiere ver deportes en estadio o en casa?",
+      "type": "multiple",
+      "options": ["En el estadio", "En casa", "No ve deportes"]
+    },
+    {
+      "id": 93,
+      "text": "¿Se considera buena persona contando chistes?",
+      "type": "boolean"
+    },
+    {
+      "id": 94,
+      "text": "¿Cual es el nombre de su mascota?",
+      "type": "text"
+    },
+    {
+      "id": 95,
+      "text": "¿Prefiere ir al cine o ver películas en casa?",
+      "type": "multiple",
+      "options": ["Cine", "En casa"]
+    },
+    {
+      "id": 96,
+      "text": "¿Le gusta el helado?",
+      "type": "boolean"
+    },
+    {
+      "id": 97,
+      "text": "¿Cuál es su sabor de helado favorito?",
+      "type": "text"
+    },
+    {
+      "id": 98,
+      "text": "¿Cual es el miembro de su familia favorito?",
+      "type": "text"
+    },
+    {
+      "id": 99,
+      "text": "¿Se considera una persona aventurera?",
+      "type": "boolean"
+    }
+  ]
+}

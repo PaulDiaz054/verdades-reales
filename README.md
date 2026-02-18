@@ -20,7 +20,7 @@ Un juego multijugador interactivo donde los jugadores compiten por demostrar qu�
 **Verdaderos Reales** es un juego de preguntas y respuestas multijugador donde:
 
 - **1 jugador es el "Lider"**: La persona sobre quien trata el juego
-- **Los demás son "Conocidos"**: Compiten respondiendo preguntas sobre el Lider
+- **Los demás son "Reales"**: Compiten respondiendo preguntas sobre el Lider
 - **El Lider valida**: Decide si las respuestas son correctas o no
 - **Gana el primero en llegar a 5 puntos**: ¡El que mejor conoce al Lider!
 
@@ -46,7 +46,7 @@ Un juego multijugador interactivo donde los jugadores compiten por demostrar qu�
 - ✅ **Orden aleatorio**: Las preguntas se mezclan cada partida
 - ✅ **Multijugador local**: Múltiples jugadores en diferentes dispositivos
 - ✅ **Actualización en tiempo real**: Los cambios se sincronizan cada 2 segundos
-- ✅ **Sistema de puntuación**: Primer Conocido en llegar a 10 puntos gana
+- ✅ **Sistema de puntuación**: Primer Real en llegar a 10 puntos gana
 - ✅ **Validación del Lider**: Solo el Lider decide qué respuestas son correctas
 - ✅ **Transiciones automáticas**: El juego fluye sin necesidad de botones extra
 
@@ -73,34 +73,34 @@ Este proyecto está construido con:
    - "Partida Rapida (Preguntas Genéricas)" → Juego rápido
    - "Partida Personalizada (Preguntas Personalizadas)" → Crea tus preguntas
 4. **Comparte el código de sala** con los demás jugadores (ej: "A3B7F2")
-5. **Espera** a que los Conocidos se unan
+5. **Espera** a que los Reales se unan
 6. **Presiona "Iniciar Juego"** cuando todos estén listos
 
-### Unirse a una Sala (Como Conocido)
+### Unirse a una Sala (Como Real)
 
 1. **Ingresa tu nombre**
 2. **Escribe el código de sala** que te dio el Lider
-3. **Presiona "Unirse como Conocido"**
+3. **Presiona "Unirse como Real"**
 4. **Espera** a que el Lider inicie el juego
 5. **¡Responde las preguntas!**
 
 ### Durante el Juego
 
-**Como Conocido:**
+**Como Real:**
 - Lee cada pregunta sobre el Lider
 - Selecciona o escribe tu respuesta
 - Espera a que el Lider valide
 - ¡Acumula puntos!
 
 **Como Lider:**
-- Ve las respuestas de todos los Conocidos
+- Ve las respuestas de todos los Reales
 - Marca cada respuesta como correcta (✓) o incorrecta (✗)
 - El juego avanza automáticamente a la siguiente pregunta
 - ¡Descubre quién te conoce mejor!
 
 ### Ganar el Juego
 
-- El **primer Conocido en llegar a 10 puntos** gana
+- El **primer Real en llegar a 10 puntos** gana
 - Se muestra la tabla de clasificación final
 - Puedes volver al menú para jugar otra ronda
 

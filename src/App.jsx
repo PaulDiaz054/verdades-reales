@@ -10,6 +10,7 @@ import {
   Plus,
   LogIn,
 } from "lucide-react";
+import questionsData from "./assets/questions_es.json";
 
 const VerdaderosReales = () => {
   const [gameState, setGameState] = useState("menu");
@@ -19,94 +20,9 @@ const VerdaderosReales = () => {
   const [currentRoom, setCurrentRoom] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const GENERIC_QUESTIONS = [
-    {
-      id: 1,
-      text: "¿Cuál es su color favorito?",
-      type: "text",
-      correctAnswer: "",
-    },
-    {
-      id: 2,
-      text: "¿Cuál es su comida favorita?",
-      type: "text",
-      correctAnswer: "",
-    },
-    {
-      id: 3,
-      text: "¿Prefiere playa o montaña?",
-      type: "multiple",
-      options: ["Playa", "Montaña"],
-      correctAnswer: "",
-    },
-    {
-      id: 4,
-      text: "¿Es una persona madrugadora?",
-      type: "boolean",
-      correctAnswer: "",
-    },
-    {
-      id: 5,
-      text: "¿Cuál es su película favorita?",
-      type: "text",
-      correctAnswer: "",
-    },
-    {
-      id: 6,
-      text: "¿Prefiere perros o gatos?",
-      type: "multiple",
-      options: ["Perros", "Gatos", "Ambos", "Ninguno"],
-      correctAnswer: "",
-    },
-    { id: 7, text: "¿Le gusta el café?", type: "boolean", correctAnswer: "" },
-    {
-      id: 8,
-      text: "¿Cuál es su pasatiempo favorito?",
-      type: "text",
-      correctAnswer: "",
-    },
-    {
-      id: 9,
-      text: "¿Prefiere verano o invierno?",
-      type: "multiple",
-      options: ["Verano", "Invierno"],
-      correctAnswer: "",
-    },
-    {
-      id: 10,
-      text: "¿Cuántos hermanos tiene?",
-      type: "text",
-      correctAnswer: "",
-    },
-    { id: 11, text: "¿Le gusta bailar?", type: "boolean", correctAnswer: "" },
-    {
-      id: 12,
-      text: "¿Cuál es su género musical favorito?",
-      type: "text",
-      correctAnswer: "",
-    },
-    {
-      id: 13,
-      text: "¿Prefiere dulce o salado?",
-      type: "multiple",
-      options: ["Dulce", "Salado"],
-      correctAnswer: "",
-    },
-    {
-      id: 14,
-      text: "¿Es una persona organizada?",
-      type: "boolean",
-      correctAnswer: "",
-    },
-    {
-      id: 15,
-      text: "¿Cuál es su deporte favorito?",
-      type: "text",
-      correctAnswer: "",
-    },
-  ];
+  const GENERIC_QUESTIONS = questionsData.genericas;
 
-  const WINNING_SCORE = 5;
+  const LIMIT_QUESTIONS = 15;
 
   useEffect(() => {
     if (
@@ -116,7 +32,7 @@ const VerdaderosReales = () => {
     ) {
       const interval = setInterval(async () => {
         await loadRoom();
-      }, 2000);
+      }, 1000);
       return () => clearInterval(interval);
     }
   }, [gameState, roomCode]);
@@ -138,13 +54,18 @@ const VerdaderosReales = () => {
       return;
     }
 
+    let questions = mode === "generic" ? shuffleArray(GENERIC_QUESTIONS) : [];
+    if (LIMIT_QUESTIONS && mode === "generic") {
+      questions = questions.slice(0, LIMIT_QUESTIONS);
+    }
+
     const code = generateRoomCode();
     const room = {
       code: code,
       mode: mode,
       king: { name: playerName, id: Date.now().toString() },
       aspirants: [],
-      questions: mode === "generic" ? shuffleArray(GENERIC_QUESTIONS) : [],
+      questions: questions,
       currentQuestionIndex: 0,
       currentAnswers: [],
       status: "waiting",
@@ -156,7 +77,6 @@ const VerdaderosReales = () => {
       await window.storage.set(`room_${code}`, JSON.stringify(room), true);
       setRoomCode(code);
       setPlayerRole("king");
-      setGameMode(mode);
       setCurrentRoom(room);
       setGameState("lobby");
     } catch (error) {
@@ -199,7 +119,6 @@ const VerdaderosReales = () => {
       );
 
       setPlayerRole("aspirant");
-      setGameMode(room.mode);
       setCurrentRoom(room);
       setGameState("lobby");
     } catch (error) {
@@ -281,10 +200,10 @@ const VerdaderosReales = () => {
         room.scores[aspirantId] = (room.scores[aspirantId] || 0) + 1;
       }
 
-      // Crear array de aspirantes que ya respondieron si no existe
+      // Crear array de jugadores que ya respondieron si no existe
       if (!room.answeredAspirants) room.answeredAspirants = [];
 
-      // Agregar este aspirante a la lista de "ya respondieron"
+      // Agregar este jugador a la lista de "ya respondieron"
       if (!room.answeredAspirants.includes(aspirantId)) {
         room.answeredAspirants.push(aspirantId);
       }
@@ -293,19 +212,6 @@ const VerdaderosReales = () => {
       room.currentAnswers = room.currentAnswers.filter(
         (a) => a.aspirantId !== aspirantId,
       );
-
-      // Verificar si alguien ganó
-      if (room.scores[aspirantId] >= WINNING_SCORE) {
-        room.status = "finished";
-        room.winner = room.aspirants.find((a) => a.id === aspirantId);
-        await window.storage.set(
-          `room_${roomCode}`,
-          JSON.stringify(room),
-          true,
-        );
-        setCurrentRoom(room);
-        return; // Terminar aquí si alguien ganó
-      }
 
       // Verificar si ya no hay respuestas pendientes (todos validados)
       if (room.currentAnswers.length === 0) {
@@ -322,23 +228,6 @@ const VerdaderosReales = () => {
       setCurrentRoom(room);
     } catch (error) {
       alert("Error al validar respuesta: " + error.message);
-    }
-  };
-  const nextQuestion = async () => {
-    try {
-      const room = { ...currentRoom };
-      room.currentQuestionIndex++;
-      room.currentAnswers = [];
-      room.answeredAspirants = []; // ← NUEVO: Limpiar la lista de quienes respondieron
-
-      if (room.currentQuestionIndex >= room.questions.length) {
-        room.status = "finished";
-      }
-
-      await window.storage.set(`room_${roomCode}`, JSON.stringify(room), true);
-      setCurrentRoom(room);
-    } catch (error) {
-      alert("Error al cambiar pregunta: " + error.message);
     }
   };
   const renderMenu = () => (
@@ -420,7 +309,7 @@ const VerdaderosReales = () => {
             <div className="flex items-center gap-2 mb-3">
               <Users className="w-6 h-6 text-blue-600" />
               <p className="font-bold text-gray-800">
-                Aspirantes ({currentRoom?.aspirants?.length || 0})
+                Reales ({currentRoom?.aspirants?.length || 0})
               </p>
             </div>
             <div className="space-y-2">
@@ -431,7 +320,7 @@ const VerdaderosReales = () => {
               ))}
               {(!currentRoom?.aspirants ||
                 currentRoom.aspirants.length === 0) && (
-                <p className="text-gray-500 text-sm">Esperando aspirantes...</p>
+                <p className="text-gray-500 text-sm">Esperando Reales...</p>
               )}
             </div>
           </div>
@@ -452,7 +341,7 @@ const VerdaderosReales = () => {
 
         {playerRole === "aspirant" && (
           <div className="text-center text-gray-600">
-            <p>Esperando que el Rey inicie el juego...</p>
+            <p>Esperando que el Lider inicie el juego...</p>
           </div>
         )}
       </div>
@@ -482,10 +371,10 @@ const VerdaderosReales = () => {
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">
-                  Vista del Rey
+                  Vista del Lider
                 </h2>
                 <span className="text-purple-600 font-bold">
-                  Pregunta {currentRoom.currentQuestionIndex + 1}
+                  Pregunta {currentRoom.currentQuestionIndex + 1}/{currentRoom.questions.length}
                 </span>
               </div>
 
@@ -562,7 +451,7 @@ const VerdaderosReales = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800">Tu Turno</h2>
               <span className="text-purple-600 font-bold">
-                Pregunta {currentRoom.currentQuestionIndex + 1}
+                Pregunta {currentRoom.currentQuestionIndex + 1}/{currentRoom.questions.length}
               </span>
             </div>
 
@@ -602,7 +491,7 @@ const VerdaderosReales = () => {
                   : "Respuesta validada"}
               </p>
               <p className="text-sm text-gray-600 mt-2">
-                Esperando validación del Rey...
+                Esperando validación del Lider...
               </p>
             </div>
           ) : (
@@ -688,7 +577,9 @@ const VerdaderosReales = () => {
                 <p className="text-2xl font-bold text-gray-800">
                   {winner.aspirant?.name}
                 </p>
-                <p className="text-gray-600">¡Es quien mejor conoce al Rey!</p>
+                <p className="text-gray-600">
+                  ¡Es quien mejor conoce al Lider!
+                </p>
                 <p className="text-4xl font-bold text-purple-600 mt-2">
                   {winner.score} puntos
                 </p>
@@ -735,7 +626,7 @@ const VerdaderosReales = () => {
       </div>
     );
   };
-  
+
   return (
     <div className="font-sans">
       {gameState === "menu" && renderMenu()}
