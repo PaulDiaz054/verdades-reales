@@ -1,8 +1,40 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import questionsData from "../assets/questions_es.json";
 
 const GENERIC_QUESTIONS = questionsData.genericas;
 const LIMIT_QUESTIONS = 15;
+
+// Intervalo de polling según el estado del juego y rol del jugador
+const getPollingInterval = (gameState, playerRole, currentRoom) => {
+  // Fuera del juego: sin polling
+  if (gameState === "menu" || gameState === "results") return null;
+
+  // Lobby: el rey espera que se unan jugadores, aspirantes esperan que inicie
+  if (gameState === "lobby") return 3000;
+
+  // Jugando:
+  if (gameState === "playing" && currentRoom) {
+    // El rey valida respuestas → solo necesita saber cuando llegan respuestas
+    if (playerRole === "king") {
+      const hayRespuestasPendientes = currentRoom.currentAnswers?.length > 0;
+      // Si ya hay respuestas visibles, no necesita polling urgente
+      return hayRespuestasPendientes ? null : 2000;
+    }
+
+    // Aspirante: si ya respondió, espera al rey → polling lento
+    // Si no respondió aún, es su turno → sin polling (espera input)
+    if (playerRole === "aspirant") {
+      const currentQuestion =
+        currentRoom.questions?.[currentRoom.currentQuestionIndex];
+      const yaRespondio = currentRoom.currentAnswers?.some(
+        (a) => a.aspirantName === null // se reemplaza abajo con playerName
+      );
+      return 3000; // siempre polling lento para aspirante esperando validación
+    }
+  }
+
+  return 3000; // fallback seguro
+};
 
 const useGameRoom = () => {
   const [gameState, setGameState] = useState("menu");
@@ -12,18 +44,32 @@ const useGameRoom = () => {
   const [currentRoom, setCurrentRoom] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Usamos ref para acceder a valores actuales dentro del intervalo
+  const playerNameRef = useRef(playerName);
+  const playerRoleRef = useRef(playerRole);
+  const roomCodeRef = useRef(roomCode);
+  const currentRoomRef = useRef(currentRoom);
+  const gameStateRef = useRef(gameState);
+
+  useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
+  useEffect(() => { playerRoleRef.current = playerRole; }, [playerRole]);
+  useEffect(() => { roomCodeRef.current = roomCode; }, [roomCode]);
+  useEffect(() => { currentRoomRef.current = currentRoom; }, [currentRoom]);
+  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
+
   useEffect(() => {
-    if (
-      (gameState === "lobby" || gameState === "playing") &&
-      currentRoom &&
-      roomCode
-    ) {
-      const interval = setInterval(async () => {
-        await loadRoom();
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [gameState, roomCode]);
+    if (gameState === "menu" || gameState === "results" || !roomCode) return;
+
+    // Calculamos el intervalo según contexto
+    const interval = getPollingInterval(gameState, playerRole, currentRoom);
+    if (!interval) return;
+
+    const timer = setInterval(async () => {
+      await loadRoom();
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [gameState, playerRole, currentRoom?.currentAnswers?.length, roomCode]);
 
   const shuffleArray = (array) => {
     const shuffled = [...array];
@@ -119,19 +165,22 @@ const useGameRoom = () => {
   };
 
   const loadRoom = async () => {
-    if (!roomCode) return;
+    const code = roomCodeRef.current;
+    if (!code) return;
 
     try {
-      const result = await window.storage.get(`room_${roomCode}`, true);
+      const result = await window.storage.get(`room_${code}`, true);
       if (result) {
         const room = JSON.parse(result.value);
         setCurrentRoom(room);
 
-        if (room.status === "answering" && gameState === "lobby") {
+        const gs = gameStateRef.current;
+
+        if (room.status === "answering" && gs === "lobby") {
           setGameState("playing");
         }
 
-        if (room.status === "finished" && gameState !== "results") {
+        if (room.status === "finished" && gs !== "results") {
           setGameState("results");
         }
       }
@@ -195,7 +244,6 @@ const useGameRoom = () => {
       }
 
       if (!room.answeredAspirants) room.answeredAspirants = [];
-
       if (!room.answeredAspirants.includes(aspirantId)) {
         room.answeredAspirants.push(aspirantId);
       }
@@ -228,17 +276,14 @@ const useGameRoom = () => {
   };
 
   return {
-    // Estado
     gameState,
     roomCode,
     playerName,
     playerRole,
     currentRoom,
     loading,
-    // Setters simples
     setRoomCode,
     setPlayerName,
-    // Acciones
     createRoom,
     joinRoom,
     startGame,
