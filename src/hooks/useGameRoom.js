@@ -20,7 +20,7 @@ const useGameRoom = () => {
     ) {
       const interval = setInterval(async () => {
         await loadRoom();
-      }, 1000);
+      }, 2000);
       return () => clearInterval(interval);
     }
   }, [gameState, roomCode]);
