@@ -4,22 +4,38 @@ import questionsData from "../assets/questions_es.json";
 const GENERIC_QUESTIONS = questionsData.genericas;
 const LIMIT_QUESTIONS = 10;
 
+const BASE_URL = import.meta.env.VITE_SERVER_URL
+  ? `${import.meta.env.VITE_SERVER_URL}/api/room`
+  : "/api/room";
+
 const getPollingInterval = (gameState, playerRole, currentRoom, playerName) => {
   if (gameState === "menu" || gameState === "results") return null;
-
   if (gameState === "lobby") return 3000;
 
   if (gameState === "playing" && currentRoom) {
     if (playerRole === "king") {
-      const hayRespuestasPendientes = currentRoom.currentAnswers?.length > 0;
-      return hayRespuestasPendientes ? null : 2000;
+      const totalAspirantes = currentRoom.aspirants?.length || 0;
+      const respuestasRecibidas = currentRoom.currentAnswers?.length || 0;
+      const todosRespondieron =
+        totalAspirantes > 0 && respuestasRecibidas >= totalAspirantes;
+      return todosRespondieron ? null : 2000;
     }
 
     if (playerRole === "aspirant") {
-      const yaRespondio = currentRoom.currentAnswers?.some(
-        (a) => a.aspirantName === playerName
+      const aspirantId = currentRoom.aspirants?.find(
+        (a) => a.name === playerName,
+      )?.id;
+      const currentQuestionId =
+        currentRoom.questions?.[currentRoom.currentQuestionIndex]?.id;
+      const myAnswer = currentRoom.currentAnswers?.find(
+        (a) =>
+          a.aspirantId === aspirantId &&
+          String(a.questionId) === String(currentQuestionId),
       );
-      return yaRespondio ? 3000 : null;
+      const alreadyValidated =
+        currentRoom.answeredAspirants?.includes(aspirantId);
+      const hasAnswered = !!myAnswer || alreadyValidated;
+      return hasAnswered ? 1500 : null; // ✅ 1500ms en vez de null cuando ya respondió
     }
   }
 
@@ -33,6 +49,7 @@ const useGameRoom = () => {
   const [playerRole, setPlayerRole] = useState(null);
   const [currentRoom, setCurrentRoom] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [answeredQuestions, setAnsweredQuestions] = useState(new Set());
 
   const playerNameRef = useRef(playerName);
   const playerRoleRef = useRef(playerRole);
@@ -40,16 +57,31 @@ const useGameRoom = () => {
   const currentRoomRef = useRef(currentRoom);
   const gameStateRef = useRef(gameState);
 
-  useEffect(() => { playerNameRef.current = playerName; }, [playerName]);
-  useEffect(() => { playerRoleRef.current = playerRole; }, [playerRole]);
-  useEffect(() => { roomCodeRef.current = roomCode; }, [roomCode]);
-  useEffect(() => { currentRoomRef.current = currentRoom; }, [currentRoom]);
-  useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
+  useEffect(() => {
+    playerNameRef.current = playerName;
+  }, [playerName]);
+  useEffect(() => {
+    playerRoleRef.current = playerRole;
+  }, [playerRole]);
+  useEffect(() => {
+    roomCodeRef.current = roomCode;
+  }, [roomCode]);
+  useEffect(() => {
+    currentRoomRef.current = currentRoom;
+  }, [currentRoom]);
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
 
   useEffect(() => {
     if (gameState === "menu" || gameState === "results" || !roomCode) return;
 
-    const interval = getPollingInterval(gameState, playerRole, currentRoom, playerName);
+    const interval = getPollingInterval(
+      gameState,
+      playerRole,
+      currentRoom,
+      playerName,
+    );
     if (!interval) return;
 
     const timer = setInterval(async () => {
@@ -57,7 +89,13 @@ const useGameRoom = () => {
     }, interval);
 
     return () => clearInterval(timer);
-  }, [gameState, playerRole, currentRoom?.currentAnswers?.length, roomCode, playerName]);
+  }, [
+    gameState,
+    playerRole,
+    currentRoom?.currentAnswers?.length,
+    roomCode,
+    playerName,
+  ]);
 
   const shuffleArray = (array) => {
     const shuffled = [...array];
@@ -85,15 +123,16 @@ const useGameRoom = () => {
 
     const code = generateRoomCode();
     const room = {
-      code: code,
-      mode: mode,
+      code,
+      mode,
       king: { name: playerName, id: Date.now().toString() },
       aspirants: [],
-      questions: questions,
+      questions,
       currentQuestionIndex: 0,
       currentAnswers: [],
       status: "waiting",
       scores: {},
+      answeredAspirants: [],
     };
 
     try {
@@ -118,30 +157,23 @@ const useGameRoom = () => {
 
     try {
       setLoading(true);
-      const result = await window.storage.get(
-        `room_${roomCode.toUpperCase()}`,
-        true
-      );
+      const response = await fetch(`${BASE_URL}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomCode: roomCode.toUpperCase(), playerName }),
+      });
 
-      if (!result) {
+      if (response.status === 404) {
         alert("Sala no encontrada");
         return;
       }
+      if (!response.ok) {
+        const data = await response.json();
+        alert("Error al unirse: " + (data.error || response.statusText));
+        return;
+      }
 
-      const room = JSON.parse(result.value);
-      const aspirantId = Date.now().toString();
-      const newAspirant = { name: playerName, id: aspirantId };
-
-      if (!room.aspirants) room.aspirants = [];
-      room.aspirants.push(newAspirant);
-      room.scores[aspirantId] = 0;
-
-      await window.storage.set(
-        `room_${roomCode.toUpperCase()}`,
-        JSON.stringify(room),
-        true
-      );
-
+      const { room } = await response.json();
       setPlayerRole("aspirant");
       setCurrentRoom(room);
       setGameState("lobby");
@@ -163,14 +195,10 @@ const useGameRoom = () => {
         setCurrentRoom(room);
 
         const gs = gameStateRef.current;
-
-        if (room.status === "answering" && gs === "lobby") {
+        if (room.status === "answering" && gs === "lobby")
           setGameState("playing");
-        }
-
-        if (room.status === "finished" && gs !== "results") {
+        if (room.status === "finished" && gs !== "results")
           setGameState("results");
-        }
       }
     } catch (error) {
       console.error("Error loading room:", error);
@@ -192,31 +220,35 @@ const useGameRoom = () => {
     const currentQuestion =
       currentRoom.questions[currentRoom.currentQuestionIndex];
     const aspirantId = currentRoom.aspirants.find(
-      (a) => a.name === playerName
+      (a) => a.name === playerName,
     )?.id;
 
-    const answerData = {
-      aspirantId: aspirantId,
-      aspirantName: playerName,
-      questionId: currentQuestion.id,
-      answer: answer,
-      timestamp: Date.now(),
-    };
+    setAnsweredQuestions((prev) =>
+      new Set(prev).add(currentRoom.currentQuestionIndex),
+    );
 
     try {
-      const room = { ...currentRoom };
-      if (!room.currentAnswers) room.currentAnswers = [];
+      const response = await fetch(`${BASE_URL}/answer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode,
+          aspirantId,
+          aspirantName: playerName,
+          questionId: currentQuestion.id,
+          answer,
+        }),
+      });
 
-      const existingIndex = room.currentAnswers.findIndex(
-        (a) => a.aspirantId === aspirantId
-      );
-      if (existingIndex >= 0) {
-        room.currentAnswers[existingIndex] = answerData;
-      } else {
-        room.currentAnswers.push(answerData);
+      if (!response.ok) {
+        const data = await response.json();
+        alert(
+          "Error al enviar respuesta: " + (data.error || response.statusText),
+        );
+        return;
       }
 
-      await window.storage.set(`room_${roomCode}`, JSON.stringify(room), true);
+      const { room } = await response.json();
       setCurrentRoom(room);
     } catch (error) {
       alert("Error al enviar respuesta: " + error.message);
@@ -225,31 +257,21 @@ const useGameRoom = () => {
 
   const validateAnswer = async (aspirantId, isCorrect) => {
     try {
-      const room = { ...currentRoom };
+      const response = await fetch(`${BASE_URL}/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomCode, aspirantId, isCorrect }),
+      });
 
-      if (isCorrect) {
-        room.scores[aspirantId] = (room.scores[aspirantId] || 0) + 1;
+      if (!response.ok) {
+        const data = await response.json();
+        alert(
+          "Error al validar respuesta: " + (data.error || response.statusText),
+        );
+        return;
       }
 
-      if (!room.answeredAspirants) room.answeredAspirants = [];
-      if (!room.answeredAspirants.includes(aspirantId)) {
-        room.answeredAspirants.push(aspirantId);
-      }
-
-      room.currentAnswers = room.currentAnswers.filter(
-        (a) => a.aspirantId !== aspirantId
-      );
-
-      if (room.currentAnswers.length === 0) {
-        room.currentQuestionIndex++;
-        room.answeredAspirants = [];
-
-        if (room.currentQuestionIndex >= room.questions.length) {
-          room.status = "finished";
-        }
-      }
-
-      await window.storage.set(`room_${roomCode}`, JSON.stringify(room), true);
+      const { room } = await response.json();
       setCurrentRoom(room);
     } catch (error) {
       alert("Error al validar respuesta: " + error.message);
@@ -259,6 +281,7 @@ const useGameRoom = () => {
   const resetGame = () => {
     setGameState("menu");
     setCurrentRoom(null);
+    setAnsweredQuestions(new Set());
     setRoomCode("");
     setPlayerRole(null);
   };
@@ -270,6 +293,7 @@ const useGameRoom = () => {
     playerRole,
     currentRoom,
     loading,
+    answeredQuestions,
     setRoomCode,
     setPlayerName,
     createRoom,

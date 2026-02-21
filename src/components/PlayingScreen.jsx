@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Check, X } from "lucide-react";
 
 const PlayingScreen = ({
@@ -6,20 +7,46 @@ const PlayingScreen = ({
   playerName,
   submitAnswer,
   validateAnswer,
+  answeredQuestions,
 }) => {
-  if (!currentRoom) return null;
+  const [validating, setValidating] = useState(new Set()); // ✅ dentro del componente
+
+  const handleValidate = async (aspirantId, isCorrect) => {
+    if (validating.has(aspirantId)) return; // evitar doble click
+    setValidating((prev) => new Set(prev).add(aspirantId));
+    await validateAnswer(aspirantId, isCorrect);
+    setValidating((prev) => {
+      const next = new Set(prev);
+      next.delete(aspirantId);
+      return next;
+    });
+  };
 
   const currentQuestion =
     currentRoom.questions[currentRoom.currentQuestionIndex];
   const aspirantId = currentRoom.aspirants?.find(
-    (a) => a.name === playerName
+    (a) => a.name === playerName,
   )?.id;
+  // ✅ LIMPIO - hasAnswered solo si hay respuesta para la pregunta actual
+  // ✅ hasAnswered = ya respondió (está en currentAnswers) O ya fue validado (está en answeredAspirants)
+  const currentQuestionId =
+    currentRoom.questions[currentRoom.currentQuestionIndex]?.id;
   const myAnswer = currentRoom.currentAnswers?.find(
-    (a) => a.aspirantName === playerName
+    (a) =>
+      a.aspirantName === playerName &&
+      String(a.questionId) === String(currentQuestionId), // ✅ comparar como strings
   );
-  const hasAnswered =
-    currentRoom.answeredAspirants?.includes(aspirantId) || myAnswer;
+  const alreadyValidated = currentRoom.answeredAspirants?.includes(aspirantId);
 
+  // ✅ También verificar el estado local
+  const hasAnswered =
+    !!myAnswer ||
+    alreadyValidated ||
+    answeredQuestions.has(currentRoom.currentQuestionIndex);
+
+  console.log("currentQuestionId:", currentQuestionId);
+  console.log("currentAnswers:", currentRoom.currentAnswers);
+  console.log("myAnswer:", myAnswer);
   if (playerRole === "king") {
     return (
       <div className="min-h-screen p-4">
@@ -74,14 +101,16 @@ const PlayingScreen = ({
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => validateAnswer(answer.aspirantId, true)}
-                      className="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition"
+                      onClick={() => handleValidate(answer.aspirantId, true)}
+                      disabled={validating.has(answer.aspirantId)}
+                      className="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition disabled:opacity-50"
                     >
                       <Check className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => validateAnswer(answer.aspirantId, false)}
-                      className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition"
+                      onClick={() => handleValidate(answer.aspirantId, false)}
+                      disabled={validating.has(answer.aspirantId)}
+                      className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition disabled:opacity-50"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -102,7 +131,7 @@ const PlayingScreen = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 p-4">
+    <div className="min-h-screen p-4">
       <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-6">
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
@@ -148,7 +177,9 @@ const PlayingScreen = ({
             <Check className="w-12 h-12 text-green-600 mx-auto mb-2" />
             <p className="font-bold text-gray-800">Respuesta Enviada</p>
             <p className="text-gray-700 mt-2">
-              {myAnswer ? `Tu respuesta: ${myAnswer.answer}` : "Respuesta validada"}
+              {myAnswer
+                ? `Tu respuesta: ${myAnswer.answer}`
+                : "Respuesta validada"}
             </p>
             <p className="text-sm text-gray-600 mt-2">
               Esperando validación del Lider...
