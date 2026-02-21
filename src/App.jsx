@@ -5,7 +5,7 @@ import LobbyScreen from "./components/LobbyScreen";
 import PlayingScreen from "./components/PlayingScreen";
 import ResultsScreen from "./components/ResultsScreen";
 import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const VerdaderosReales = () => {
   const gameRoom = useGameRoom();
