@@ -1,60 +1,54 @@
 import { Redis } from "@upstash/redis";
+import { setCors, parseRoom } from "./_helpers.js";
+
 const redis = Redis.fromEnv();
 
-// Script Lua: atómico en Redis, no puede haber race condition
+// Atómico vía Lua: evita race conditions al unirse simultáneamente
 const JOIN_SCRIPT = `
-local key = KEYS[1]
-local playerName = ARGV[1]
-local aspirantId = ARGV[2]
+local key   = KEYS[1]
+local name  = ARGV[1]
+local id    = ARGV[2]
 
 local raw = redis.call('GET', key)
 if not raw then return {err = 'NOT_FOUND'} end
 
 local room = cjson.decode(raw)
 
--- Idempotente: ya está en la sala
-if room.aspirants then
-  for _, a in ipairs(room.aspirants) do
-    if a.name == playerName then
-      return cjson.encode(room)
-    end
-  end
-else
-  room.aspirants = {}
+if not room.aspirants then room.aspirants = {} end
+for _, a in ipairs(room.aspirants) do
+  if a.name == name then return cjson.encode(room) end
 end
 
-if not room.scores then room.scores = {} end
+if not room.scores  then room.scores  = {} end
+if not room.answers then room.answers = {} end
 
-table.insert(room.aspirants, {name = playerName, id = aspirantId})
-room.scores[aspirantId] = 0
+table.insert(room.aspirants, { name = name, id = id })
+room.scores[id]  = 0
+room.answers[id] = {}
 
-local serialized = cjson.encode(room)
-redis.call('SET', key, serialized, 'EX', 86400)
-return serialized
+redis.call('SET', key, cjson.encode(room), 'EX', 86400)
+return cjson.encode(room)
 `;
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  setCors(res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { roomCode, playerName } = req.body;
-  if (!roomCode || !playerName) return res.status(400).json({ error: "roomCode and playerName required" });
+  if (!roomCode || !playerName)
+    return res.status(400).json({ error: "Missing fields" });
 
   const key = `room_${roomCode.toUpperCase()}`;
-  const aspirantId = Date.now().toString() + Math.random().toString(36).slice(2, 5);
+  const aspirantId = `${Date.now()}${Math.random().toString(36).slice(2, 5)}`;
 
   try {
     const result = await redis.eval(JOIN_SCRIPT, [key], [playerName, aspirantId]);
-
-    if (!result) return res.status(404).json({ error: "Sala no encontrada" });
-
-    const room = typeof result === "string" ? JSON.parse(result) : result;
+    const room = parseRoom(result);
+    if (!room) return res.status(404).json({ error: "Sala no encontrada" });
     return res.status(200).json({ room });
-  } catch (error) {
-    console.error("Join error:", error);
-    return res.status(500).json({ error: "Error interno: " + error.message });
+  } catch (err) {
+    console.error("join:", err);
+    return res.status(500).json({ error: err.message });
   }
 }

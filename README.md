@@ -2,7 +2,7 @@
 
 Un juego multijugador interactivo donde los jugadores compiten por demostrar qué tan bien conocen al "Lider". Perfecto para fiestas, reuniones familiares o para conocerse mejor entre amigos.
 
-![Versión](https://img.shields.io/badge/versión-1.0.0-blue.svg)
+![Versión](https://img.shields.io/badge/versión-1.1.0-blue.svg)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green.svg)
 
 ## 📋 Tabla de Contenidos
@@ -22,7 +22,7 @@ Un juego multijugador interactivo donde los jugadores compiten por demostrar qu�
 - **1 jugador es el "Lider"**: La persona sobre quien trata el juego
 - **Los demás son "Reales"**: Compiten respondiendo preguntas sobre el Lider
 - **El Lider valida**: Decide si las respuestas son correctas o no
-- **Gana el primero en llegar a 5 puntos**: ¡El que mejor conoce al Lider!
+- **Gana el que consiga más puntos**: ¡El que mejor conoce al Lider!
 
 ---
 
@@ -30,22 +30,17 @@ Un juego multijugador interactivo donde los jugadores compiten por demostrar qu�
 
 ### 🎯 Dos Modos de Juego
 
-- **Partidas Rapidas**: 15 preguntas predefinidas listas para jugar
+- **Partidas Rapidas**: 10 preguntas predefinidas listas para jugar
   - "¿Cuál es su color favorito?"
   - "¿Prefiere playa o montaña?"
   - "¿Le gusta el café?"
   - Y más...
 
-- **Preguntas Personalizadas**: El Lider crea sus propias preguntas
-  - Preguntas de opción múltiple
-  - Preguntas de verdadero/falso
-  - Preguntas de respuesta libre
-
 ### 🎲 Mecánicas de Juego
 
 - ✅ **Orden aleatorio**: Las preguntas se mezclan cada partida
-- ✅ **Multijugador local**: Múltiples jugadores en diferentes dispositivos
-- ✅ **Actualización en tiempo real**: Los cambios se sincronizan cada 2 segundos
+- ✅ **Multijugador**: Múltiples jugadores en diferentes dispositivos
+- ✅ **Actualización en tiempo real**: Los cambios se sincronizan entre todos los jugadores
 - ✅ **Sistema de puntuación**: Primer Real en llegar a 10 puntos gana
 - ✅ **Validación del Lider**: Solo el Lider decide qué respuestas son correctas
 - ✅ **Transiciones automáticas**: El juego fluye sin necesidad de botones extra
@@ -60,7 +55,7 @@ Este proyecto está construido con:
 - ![Vite](https://img.shields.io/badge/-Vite-9135FF?style=flat&logo=vite&logoColor=white) - Build tool ultrarrápido
 - ![Tailwindcss](https://img.shields.io/badge/-TailindCSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white) - Framework de CSS utility-first
 - ![Lucide](https://img.shields.io/badge/-Lucide-F56565?style=flat&logo=lucide&logoColor=white) - Iconos modernos y ligeros
-- **localStorage API** - Almacenamiento local del navegador para persistencia
+- ![Upstash](https://img.shields.io/badge/-UpStash-00E9A3?style=flat&logo=upstash&logoColor=white) - Para almacenamiento de datos (Serverless)
 
 ---
 
@@ -71,7 +66,6 @@ Este proyecto está construido con:
 1. **Ingresa tu nombre**
 2. **Elige un modo**:
    - "Partida Rapida (Preguntas Genéricas)" → Juego rápido
-   - "Partida Personalizada (Preguntas Personalizadas)" → Crea tus preguntas
 4. **Comparte el código de sala** con los demás jugadores (ej: "A3B7F2")
 5. **Espera** a que los Reales se unan
 6. **Presiona "Iniciar Juego"** cuando todos estén listos
@@ -100,7 +94,7 @@ Este proyecto está construido con:
 
 ### Ganar el Juego
 
-- El **primer Real en llegar a 10 puntos** gana
+- El Real que consiga más puntos gana
 - Se muestra la tabla de clasificación final
 - Puedes volver al menú para jugar otra ronda
 
@@ -108,12 +102,12 @@ Este proyecto está construido con:
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE] para más detalles.
 
 ### MIT License
 
 ```
-Copyright (c) 2024 Verdaderos Reales
+Copyright (c) 2026 Verdaderos Reales
 
 Se concede permiso, de forma gratuita, a cualquier persona que obtenga una copia
 de este software y archivos de documentación asociados (el "Software"), para usar

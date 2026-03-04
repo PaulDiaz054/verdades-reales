@@ -1,102 +1,156 @@
 import { useState } from "react";
 import { Check, X } from "lucide-react";
 
-const PlayingScreen = ({
+// ─── Constantes de estilos por estado ─────────────────────────────────────────
+
+const STATE_STYLES = {
+  correct:   { card: "bg-green-100 border-2 border-green-500",   score: "text-green-600"  },
+  incorrect: { card: "bg-red-100 border-2 border-red-500",       score: "text-red-600"    },
+  answered:  { card: "bg-blue-100 border-2 border-blue-500",     score: "text-blue-600"   },
+  pending:   { card: "bg-purple-100 border-2 border-purple-400", score: "text-purple-600" },
+};
+
+// ─── Sub-componentes ───────────────────────────────────────────────────────────
+
+function ScoreCard({ name, score, state }) {
+  const { card, score: scoreColor } = STATE_STYLES[state];
+  return (
+    <div className={`p-2 rounded-lg text-center ${card}`}>
+      <p className="text-xs font-semibold text-gray-700">{name}</p>
+      <p className={`text-2xl font-bold ${scoreColor}`}>{score}</p>
+    </div>
+  );
+}
+
+function AnswerHistory({ entries, questions }) {
+  if (!entries.length) return null;
+  return (
+    <div className="mt-6">
+      <h3 className="font-bold text-gray-700 mb-3">Mis respuestas anteriores:</h3>
+      <div className="space-y-2">
+        {entries.map((entry, i) => {
+          const question = questions?.find((q) => String(q.id) === String(entry.questionId));
+          return (
+            <div
+              key={i}
+              className={`rounded-xl p-3 flex justify-between items-center ${
+                entry.isCorrect
+                  ? "bg-green-50 border border-green-300"
+                  : "bg-red-50 border border-red-300"
+              }`}
+            >
+              <div className="flex-1 min-w-0 mr-3">
+                <p className="text-xs text-gray-500 truncate">{question?.text}</p>
+                <p className="text-sm font-semibold text-gray-800 truncate">
+                  {entry.answer || "—"}
+                </p>
+              </div>
+              {entry.isCorrect ? (
+                <div className="flex items-center gap-1 text-green-600 flex-shrink-0">
+                  <Check className="w-4 h-4" />
+                  <span className="text-xs font-bold">Correcto</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 text-red-600 flex-shrink-0">
+                  <X className="w-4 h-4" />
+                  <span className="text-xs font-bold">Incorrecto</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Componente principal ──────────────────────────────────────────────────────
+
+export default function PlayingScreen({
   currentRoom,
   playerRole,
   playerName,
   submitAnswer,
   validateAnswer,
   answeredQuestions,
-}) => {
-  const [validating, setValidating] = useState(new Set()); // ✅ dentro del componente
+}) {
+  const [validating, setValidating] = useState(new Set());
 
-  const handleValidate = async (aspirantId, isCorrect) => {
-    if (validating.has(aspirantId)) return; // evitar doble click
-    setValidating((prev) => new Set(prev).add(aspirantId));
-    await validateAnswer(aspirantId, isCorrect);
-    setValidating((prev) => {
-      const next = new Set(prev);
-      next.delete(aspirantId);
-      return next;
-    });
-  };
+  const currentQuestion = currentRoom.questions[currentRoom.currentQuestionIndex];
+  const currentQuestionId = currentQuestion?.id;
 
-  const currentQuestion =
-    currentRoom.questions[currentRoom.currentQuestionIndex];
-  const aspirantId = currentRoom.aspirants?.find(
-    (a) => a.name === playerName,
-  )?.id;
-  // ✅ LIMPIO - hasAnswered solo si hay respuesta para la pregunta actual
-  // ✅ hasAnswered = ya respondió (está en currentAnswers) O ya fue validado (está en answeredAspirants)
-  const currentQuestionId =
-    currentRoom.questions[currentRoom.currentQuestionIndex]?.id;
-  const myAnswer = currentRoom.currentAnswers?.find(
-    (a) =>
-      a.aspirantName === playerName &&
-      String(a.questionId) === String(currentQuestionId), // ✅ comparar como strings
+  const me = currentRoom.aspirants?.find((a) => a.name === playerName);
+  const myCurrentAnswer = currentRoom.currentAnswers?.find(
+    (a) => a.aspirantName === playerName && String(a.questionId) === String(currentQuestionId)
   );
-  const alreadyValidated = currentRoom.answeredAspirants?.includes(aspirantId);
-
-  // ✅ También verificar el estado local
+  const myAlreadyValidated = currentRoom.answeredAspirants?.includes(me?.id);
   const hasAnswered =
-    !!myAnswer ||
-    alreadyValidated ||
+    !!myCurrentAnswer ||
+    myAlreadyValidated ||
     answeredQuestions.has(currentRoom.currentQuestionIndex);
 
-  console.log("currentQuestionId:", currentQuestionId);
-  console.log("currentAnswers:", currentRoom.currentAnswers);
-  console.log("myAnswer:", myAnswer);
+  // Determina el estado visual de un aspirante para la pregunta actual
+  function getState(aspirantId) {
+    const record = currentRoom.answers?.[aspirantId]?.find(
+      (h) => String(h.questionId) === String(currentQuestionId)
+    );
+    if (record) return record.isCorrect ? "correct" : "incorrect";
+    if (currentRoom.currentAnswers?.some((a) => String(a.aspirantId) === String(aspirantId)))
+      return "answered";
+    return "pending";
+  }
+
+  function getMyState() {
+    const record = currentRoom.answers?.[me?.id]?.find(
+      (h) => String(h.questionId) === String(currentQuestionId)
+    );
+    if (record) return record.isCorrect ? "correct" : "incorrect";
+    if (myCurrentAnswer || answeredQuestions.has(currentRoom.currentQuestionIndex))
+      return "answered";
+    return "pending";
+  }
+
+  async function handleValidate(aspirantId, isCorrect) {
+    if (validating.has(aspirantId)) return;
+    setValidating((prev) => new Set(prev).add(aspirantId));
+    await validateAnswer(aspirantId, isCorrect);
+    setValidating((prev) => { const s = new Set(prev); s.delete(aspirantId); return s; });
+  }
+
+  const questionProgress = `Pregunta ${currentRoom.currentQuestionIndex + 1}/${currentRoom.questions.length}`;
+
+  // ── Vista del King ──────────────────────────────────────────────────────────
   if (playerRole === "king") {
     return (
       <div className="min-h-screen p-4">
         <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-6">
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Vista del Lider
-              </h2>
-              <span className="text-purple-600 font-bold">
-                Pregunta {currentRoom.currentQuestionIndex + 1}/
-                {currentRoom.questions.length}
-              </span>
-            </div>
-
-            <div className="bg-purple-100 border-2 border-purple-400 rounded-xl p-4 mb-4">
-              <p className="text-xl font-bold text-gray-800">
-                {currentQuestion?.text}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {currentRoom.aspirants?.map((aspirant) => (
-                <div
-                  key={aspirant.id}
-                  className="bg-gray-100 p-2 rounded-lg text-center"
-                >
-                  <p className="text-xs font-semibold text-gray-700">
-                    {aspirant.name}
-                  </p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {currentRoom.scores?.[aspirant.id] || 0}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-800">Vista del Lider</h2>
+            <span className="text-purple-600 font-bold">{questionProgress}</span>
           </div>
 
-          <div className="space-y-3 mb-4">
-            <h3 className="font-bold text-gray-700">Respuestas Recibidas:</h3>
-            {currentRoom.currentAnswers?.map((answer) => (
-              <div
-                key={answer.aspirantId}
-                className="bg-gray-50 border-2 border-gray-300 rounded-xl p-4"
-              >
-                <div className="flex justify-between items-start mb-2">
+          <div className="bg-purple-100 border-2 border-purple-400 rounded-xl p-4 mb-4">
+            <p className="text-xl font-bold text-gray-800">{currentQuestion?.text}</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            {currentRoom.aspirants?.map((aspirant) => (
+              <ScoreCard
+                key={aspirant.id}
+                name={aspirant.name}
+                score={currentRoom.scores?.[aspirant.id] || 0}
+                state={getState(aspirant.id)}
+              />
+            ))}
+          </div>
+
+          <h3 className="font-bold text-gray-700 mb-3">Respuestas Recibidas:</h3>
+          {currentRoom.currentAnswers?.length ? (
+            <div className="space-y-3">
+              {currentRoom.currentAnswers.map((answer) => (
+                <div key={answer.aspirantId} className="bg-gray-50 border-2 border-gray-300 rounded-xl p-4 flex justify-between items-center">
                   <div>
-                    <p className="font-bold text-gray-800">
-                      {answer.aspirantName}
-                    </p>
+                    <p className="font-bold text-gray-800">{answer.aspirantName}</p>
                     <p className="text-lg text-gray-700">{answer.answer}</p>
                   </div>
                   <div className="flex gap-2">
@@ -116,129 +170,123 @@ const PlayingScreen = ({
                     </button>
                   </div>
                 </div>
-              </div>
-            ))}
-            {(!currentRoom.currentAnswers ||
-              currentRoom.currentAnswers.length === 0) && (
-              <p className="text-gray-500 text-center">
-                Esperando respuestas...
-              </p>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center">Esperando respuestas...</p>
+          )}
         </div>
       </div>
     );
   }
 
+  // ── Vista del Aspirante ─────────────────────────────────────────────────────
+  const myHistory = currentRoom.answers?.[me?.id] || [];
+
   return (
     <div className="min-h-screen p-4">
       <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-6">
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">Tu Turno</h2>
-            <span className="text-purple-600 font-bold">
-              Pregunta {currentRoom.currentQuestionIndex + 1}/
-              {currentRoom.questions.length}
-            </span>
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">Tu Turno</h2>
+          <span className="text-purple-600 font-bold">{questionProgress}</span>
+        </div>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {currentRoom.aspirants?.map((aspirant) => (
-              <div
-                key={aspirant.id}
-                className={`p-2 rounded-lg text-center ${
-                  aspirant.name === playerName
-                    ? "bg-purple-200 border-2 border-purple-500"
-                    : "bg-gray-100"
-                }`}
-              >
-                <p className="text-xs font-semibold text-gray-700">
-                  {aspirant.name}
-                </p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {currentRoom.scores?.[aspirant.id] || 0}
-                </p>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {currentRoom.aspirants?.map((aspirant) => (
+            <ScoreCard
+              key={aspirant.id}
+              name={aspirant.name}
+              score={currentRoom.scores?.[aspirant.id] || 0}
+              state={aspirant.name === playerName ? getMyState() : getState(aspirant.id)}
+            />
+          ))}
+        </div>
 
-          <div className="bg-purple-100 border-2 border-purple-400 rounded-xl p-4 mb-4">
-            <p className="text-xl font-bold text-gray-800 mb-2">
-              {currentQuestion?.text}
-            </p>
-            <p className="text-sm text-gray-600">
-              Sobre: {currentRoom.king.name}
-            </p>
-          </div>
+        <div className="bg-purple-100 border-2 border-purple-400 rounded-xl p-4 mb-6">
+          <p className="text-xl font-bold text-gray-800 mb-1">{currentQuestion?.text}</p>
+          <p className="text-sm text-gray-600">Sobre: {currentRoom.king.name}</p>
         </div>
 
         {hasAnswered ? (
           <div className="bg-green-100 border-2 border-green-400 rounded-xl p-4 text-center">
             <Check className="w-12 h-12 text-green-600 mx-auto mb-2" />
             <p className="font-bold text-gray-800">Respuesta Enviada</p>
-            <p className="text-gray-700 mt-2">
-              {myAnswer
-                ? `Tu respuesta: ${myAnswer.answer}`
-                : "Respuesta validada"}
-            </p>
-            <p className="text-sm text-gray-600 mt-2">
-              Esperando validación del Lider...
-            </p>
+            {myCurrentAnswer && (
+              <p className="text-gray-700 mt-2">Tu respuesta: {myCurrentAnswer.answer}</p>
+            )}
+            <p className="text-sm text-gray-600 mt-2">Esperando validación del Lider...</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {currentQuestion?.type === "multiple" &&
-              currentQuestion.options?.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => submitAnswer(option)}
-                  className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold hover:bg-purple-700 transition"
-                >
-                  {option}
-                </button>
-              ))}
-
-            {currentQuestion?.type === "boolean" && (
-              <>
-                <button
-                  onClick={() => submitAnswer("Sí")}
-                  className="w-full bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition"
-                >
-                  Sí / Verdadero
-                </button>
-                <button
-                  onClick={() => submitAnswer("No")}
-                  className="w-full bg-red-600 text-white p-4 rounded-xl font-bold hover:bg-red-700 transition"
-                >
-                  No / Falso
-                </button>
-              </>
-            )}
-
-            {currentQuestion?.type === "text" && (
-              <div>
-                <input
-                  type="text"
-                  placeholder="Escribe tu respuesta"
-                  id="textAnswer"
-                  className="w-full p-4 border-2 border-gray-300 rounded-xl mb-3 text-lg focus:border-purple-500 focus:outline-none"
-                />
-                <button
-                  onClick={() => {
-                    const answer = document.getElementById("textAnswer").value;
-                    if (answer.trim()) submitAnswer(answer);
-                  }}
-                  className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold hover:bg-purple-700 transition"
-                >
-                  Enviar Respuesta
-                </button>
-              </div>
-            )}
-          </div>
+          <AnswerOptions question={currentQuestion} onSubmit={submitAnswer} />
         )}
+
+        <AnswerHistory entries={myHistory} questions={currentRoom.questions} />
       </div>
     </div>
   );
-};
+}
 
-export default PlayingScreen;
+// ─── Opciones de respuesta ─────────────────────────────────────────────────────
+
+function AnswerOptions({ question, onSubmit }) {
+  if (!question) return null;
+
+  if (question.type === "multiple") {
+    return (
+      <div className="space-y-3">
+        {question.options?.map((option) => (
+          <button
+            key={option}
+            onClick={() => onSubmit(option)}
+            className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold hover:bg-purple-700 transition"
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  if (question.type === "boolean") {
+    return (
+      <div className="space-y-3">
+        <button
+          onClick={() => onSubmit("Sí")}
+          className="w-full bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition"
+        >
+          Sí / Verdadero
+        </button>
+        <button
+          onClick={() => onSubmit("No")}
+          className="w-full bg-red-600 text-white p-4 rounded-xl font-bold hover:bg-red-700 transition"
+        >
+          No / Falso
+        </button>
+      </div>
+    );
+  }
+
+  if (question.type === "text") {
+    return (
+      <div>
+        <input
+          type="text"
+          id="textAnswer"
+          placeholder="Escribe tu respuesta"
+          className="w-full p-4 border-2 border-gray-300 rounded-xl mb-3 text-lg focus:border-purple-500 focus:outline-none"
+        />
+        <button
+          onClick={() => {
+            const val = document.getElementById("textAnswer").value.trim();
+            if (val) onSubmit(val);
+          }}
+          className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold hover:bg-purple-700 transition"
+        >
+          Enviar Respuesta
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}

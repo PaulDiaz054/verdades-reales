@@ -1,26 +1,25 @@
 import { Redis } from "@upstash/redis";
+import { setCors, parseRoom } from "./_helpers.js";
+
 const redis = Redis.fromEnv();
 
 const VALIDATE_SCRIPT = `
-local key = KEYS[1]
+local key        = KEYS[1]
 local aspirantId = ARGV[1]
-local isCorrect = ARGV[2]
+local isCorrect  = ARGV[2]
 
 local raw = redis.call('GET', key)
 if not raw then return {err = 'NOT_FOUND'} end
 
 local room = cjson.decode(raw)
 
-if room.answeredAspirants then
-  for _, id in ipairs(room.answeredAspirants) do
-    if tostring(id) == tostring(aspirantId) then
-      return cjson.encode(room)
-    end
-  end
-else
-  room.answeredAspirants = {}
+-- Idempotente
+if not room.answeredAspirants then room.answeredAspirants = {} end
+for _, id in ipairs(room.answeredAspirants) do
+  if tostring(id) == tostring(aspirantId) then return cjson.encode(room) end
 end
 
+-- Actualizar score
 if isCorrect == '1' then
   if not room.scores then room.scores = {} end
   room.scores[aspirantId] = (room.scores[aspirantId] or 0) + 1
@@ -28,62 +27,61 @@ end
 
 table.insert(room.answeredAspirants, aspirantId)
 
-local newAnswers = {}
+-- Mover respuesta de currentAnswers → answers[aspirantId]
+if not room.answers then room.answers = {} end
+if not room.answers[aspirantId] then room.answers[aspirantId] = {} end
+
+local remaining = {}
 for _, a in ipairs(room.currentAnswers or {}) do
   if tostring(a.aspirantId) ~= tostring(aspirantId) then
-    table.insert(newAnswers, a)
+    table.insert(remaining, a)
+  else
+    table.insert(room.answers[aspirantId], {
+      questionId = a.questionId,
+      answer     = a.answer,
+      isCorrect  = (isCorrect == '1'),
+    })
   end
 end
-room.currentAnswers = newAnswers
+room.currentAnswers = remaining
 
-local totalAspirantes = 0
-if room.aspirants then
-  for _ in ipairs(room.aspirants) do totalAspirantes = totalAspirantes + 1 end
-end
-local totalValidados = 0
-for _ in ipairs(room.answeredAspirants) do totalValidados = totalValidados + 1 end
+-- Avanzar pregunta si todos fueron validados
+local total    = room.aspirants and #room.aspirants or 0
+local validated = #room.answeredAspirants
 
-if totalValidados >= totalAspirantes then
-  room.currentQuestionIndex = tonumber(room.currentQuestionIndex) + 1  -- ✅ forzar número
-  room.answeredAspirants = {}
-  room.currentAnswers = {}
+if validated >= total then
+  room.currentQuestionIndex = tonumber(room.currentQuestionIndex) + 1
+  room.answeredAspirants    = {}
+  room.currentAnswers       = {}
 
-  local totalPreguntas = 0
-  if room.questions then
-    for _ in ipairs(room.questions) do totalPreguntas = totalPreguntas + 1 end
-  end
-
-  if tonumber(room.currentQuestionIndex) >= totalPreguntas then  -- ✅ forzar número
+  local totalQ = room.questions and #room.questions or 0
+  if tonumber(room.currentQuestionIndex) >= totalQ then
     room.status = 'finished'
   end
 end
 
-local serialized = cjson.encode(room)
-redis.call('SET', key, serialized, 'EX', 86400)
-return serialized
+redis.call('SET', key, cjson.encode(room), 'EX', 86400)
+return cjson.encode(room)
 `;
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  setCors(res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { roomCode, aspirantId, isCorrect } = req.body;
-  if (!roomCode || !aspirantId) return res.status(400).json({ error: "Missing fields" });
+  if (!roomCode || !aspirantId)
+    return res.status(400).json({ error: "Missing fields" });
 
   const key = `room_${roomCode.toUpperCase()}`;
 
   try {
     const result = await redis.eval(VALIDATE_SCRIPT, [key], [aspirantId, isCorrect ? "1" : "0"]);
-
-    if (!result) return res.status(404).json({ error: "Sala no encontrada" });
-
-    const room = typeof result === "string" ? JSON.parse(result) : result;
+    const room = parseRoom(result);
+    if (!room) return res.status(404).json({ error: "Sala no encontrada" });
     return res.status(200).json({ room });
-  } catch (error) {
-    console.error("Validate error:", error);
-    return res.status(500).json({ error: "Error interno: " + error.message });
+  } catch (err) {
+    console.error("validate:", err);
+    return res.status(500).json({ error: err.message });
   }
 }

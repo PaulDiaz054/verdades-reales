@@ -1,4 +1,3 @@
-import "./mockStorage.js";
 import useGameRoom from "./hooks/useGameRoom";
 import MenuScreen from "./components/MenuScreen";
 import LobbyScreen from "./components/LobbyScreen";
