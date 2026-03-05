@@ -1,8 +1,19 @@
-import { Trophy, Check, X } from "lucide-react";
+import { Trophy, Check, X, Clock } from "lucide-react";
 import AdBanner from "./AdBanner";
+
+function formatDuration(startedAt, finishedAt) {
+  if (!startedAt || !finishedAt) return null;
+  const seconds = Math.floor((new Date(finishedAt) - new Date(startedAt)) / 1000);
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m === 0) return `${s}s`;
+  return `${m}m ${s}s`;
+}
 
 export default function ResultsScreen({ currentRoom, resetGame }) {
   if (!currentRoom) return null;
+
+  const duration = formatDuration(currentRoom.startedAt, currentRoom.finishedAt);
 
   const sorted = Object.entries(currentRoom.scores || {})
     .map(([id, score]) => ({
@@ -25,6 +36,14 @@ export default function ResultsScreen({ currentRoom, resetGame }) {
           <div className="text-center mb-6">
             <Trophy className="w-20 h-20 mx-auto mb-3 text-yellow-500" />
             <h1 className="text-3xl font-bold text-gray-800 mb-2">¡Juego Terminado!</h1>
+
+            {duration && (
+              <div className="flex items-center justify-center gap-2 text-gray-500 mt-1">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm">Duración de la partida: <span className="font-semibold text-gray-700">{duration}</span></span>
+              </div>
+            )}
+
             {winner && (
               <div className="bg-yellow-100 border-2 border-yellow-400 rounded-xl p-4 mt-4">
                 <p className="text-2xl font-bold text-gray-800 truncate">{winner.aspirant?.name}</p>

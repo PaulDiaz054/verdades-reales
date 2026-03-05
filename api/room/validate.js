@@ -7,6 +7,7 @@ const VALIDATE_SCRIPT = `
 local key        = KEYS[1]
 local aspirantId = ARGV[1]
 local isCorrect  = ARGV[2]
+local now        = ARGV[3]
 
 local raw = redis.call('GET', key)
 if not raw then return {err = 'NOT_FOUND'} end
@@ -46,7 +47,7 @@ end
 room.currentAnswers = remaining
 
 -- Avanzar pregunta si todos fueron validados
-local total    = room.aspirants and #room.aspirants or 0
+local total     = room.aspirants and #room.aspirants or 0
 local validated = #room.answeredAspirants
 
 if validated >= total then
@@ -56,7 +57,8 @@ if validated >= total then
 
   local totalQ = room.questions and #room.questions or 0
   if tonumber(room.currentQuestionIndex) >= totalQ then
-    room.status = 'finished'
+    room.status     = 'finished'
+    room.finishedAt = now   -- fecha y hora de fin
   end
 end
 
@@ -67,16 +69,22 @@ return cjson.encode(room)
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST")
+    return res.status(405).json({ error: "Method not allowed" });
 
   const { roomCode, aspirantId, isCorrect } = req.body;
   if (!roomCode || !aspirantId)
     return res.status(400).json({ error: "Missing fields" });
 
   const key = `room_${roomCode.toUpperCase()}`;
+  const now = new Date().toISOString(); // timestamp de fin generado en Node.js
 
   try {
-    const result = await redis.eval(VALIDATE_SCRIPT, [key], [aspirantId, isCorrect ? "1" : "0"]);
+    const result = await redis.eval(
+      VALIDATE_SCRIPT,
+      [key],
+      [aspirantId, isCorrect ? "1" : "0", now],
+    );
     const room = parseRoom(result);
     if (!room) return res.status(404).json({ error: "Sala no encontrada" });
     return res.status(200).json({ room });

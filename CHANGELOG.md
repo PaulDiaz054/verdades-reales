@@ -10,10 +10,19 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
 ---
 
+## [1.1.2] - 2026-03-05
+### Añadido
+- Se añadio la duración de la partida en la pantalla de resultados.
+
+### Corregido
+- Error que no cargaba los estados de los participantes si no respondias.
+---
+
 ## [1.1.1] — 2026-03-04
 
 ### Añadido
 - Se añadieron espacios de publicidad en la parte superior e inferior de todas las pantallas.
+- Se añadieron 101 preguntas nuevas.
 
 ### Cambiado
 - Las pantallas ahora se adaptan al tamaño de cada dispositivo: en celular ocupan toda la pantalla, en tablet y desktop se muestran centradas con un ancho cómodo.
