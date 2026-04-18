@@ -76,6 +76,7 @@ function AnswerHistory({ entries, questions }) {
 }
 
 function AnswerOptions({ question, onSubmit }) {
+  const [textValue, setTextValue] = useState("");
   if (!question) return null;
   if (question.type === "multiple") {
     return (
@@ -111,20 +112,26 @@ function AnswerOptions({ question, onSubmit }) {
     );
   }
   if (question.type === "text") {
+    const remaining = 50 - textValue.length;
+    const isNearLimit = remaining <= 10;
     return (
       <div>
-        <input
-          type="text"
-          id="textAnswer"
-          placeholder="Escribe tu respuesta"
-          className="w-full p-4 border-2 border-gray-300 rounded-xl mb-3 text-lg focus:border-purple-500 focus:outline-none"
-        />
+        <div className="relative mb-3">
+          <input
+            type="text"
+            value={textValue}
+            onChange={(e) => setTextValue(e.target.value.slice(0, 50))}
+            placeholder="Escribe tu respuesta"
+            className="w-full p-4 border-2 border-gray-300 rounded-xl text-lg focus:border-purple-500 focus:outline-none pr-16"
+          />
+          <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold ${isNearLimit ? "text-red-500" : "text-gray-400"}`}>
+            {remaining}/{50}
+          </span>
+        </div>
         <button
-          onClick={() => {
-            const val = document.getElementById("textAnswer").value.trim();
-            if (val) onSubmit(val);
-          }}
-          className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold hover:bg-purple-700 active:scale-95 transition-all"
+          onClick={() => { if (textValue.trim()) onSubmit(textValue.trim()); }}
+          disabled={!textValue.trim()}
+          className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold hover:bg-purple-700 active:scale-95 transition-all disabled:opacity-50"
         >
           Enviar Respuesta
         </button>
@@ -251,30 +258,32 @@ export default function PlayingScreen({
             {currentRoom.currentAnswers.map((answer) => (
               <div
                 key={answer.aspirantId}
-                className="bg-gray-50 border-2 border-gray-300 rounded-xl p-4 flex justify-between items-center gap-3"
+                className="bg-gray-50 border-2 border-gray-300 rounded-xl p-4 flex flex-col gap-3"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-gray-800 truncate">
+                <div className="flex-1">
+                  <p className="font-bold text-gray-800">
                     {answer.aspirantName}
                   </p>
-                  <p className="text-lg text-gray-700 truncate">
+                  <p className="text-lg text-gray-700 break-words">
                     {answer.answer}
                   </p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2">
                   <button
                     onClick={() => handleValidate(answer.aspirantId, true)}
                     disabled={validating.has(answer.aspirantId)}
-                    className="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 active:scale-95 transition-all disabled:opacity-50"
                   >
                     <Check className="w-5 h-5" />
+                    <span className="text-sm font-bold">Correcto</span>
                   </button>
                   <button
                     onClick={() => handleValidate(answer.aspirantId, false)}
                     disabled={validating.has(answer.aspirantId)}
-                    className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 active:scale-95 transition-all disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white py-2 px-3 rounded-lg hover:bg-red-600 active:scale-95 transition-all disabled:opacity-50"
                   >
                     <X className="w-5 h-5" />
+                    <span className="text-sm font-bold">Incorrecto</span>
                   </button>
                 </div>
               </div>

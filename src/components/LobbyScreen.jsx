@@ -1,11 +1,29 @@
-import { Crown, Users, Play } from "lucide-react";
+import { Crown, Users, Play, Settings } from "lucide-react";
 import AdBanner from "./AdBanner";
+import GameConfigModal from "./GameConfigModal";
+import { useState } from "react";
 
-export default function LobbyScreen({ roomCode, playerRole, currentRoom, startGame }) {
+export default function LobbyScreen({ roomCode, playerRole, currentRoom, startGame, gameConfig, setGameConfig, updateRoomConfig }) {
   const aspirants = currentRoom?.aspirants || [];
+  const [showConfig, setShowConfig] = useState(false);
+
+  async function handleConfigSave(newConfig) {
+    setGameConfig(newConfig);
+    await updateRoomConfig(newConfig);
+    setShowConfig(false);
+  }
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-purple-50 to-indigo-100">
+
+      {showConfig && (
+        <GameConfigModal
+          config={gameConfig}
+          onChange={() => {}}
+          onClose={() => setShowConfig(false)}
+          onSave={handleConfigSave}
+        />
+      )}
 
       <div className="w-full p-3"><AdBanner slot="top" /></div>
 
@@ -25,6 +43,42 @@ export default function LobbyScreen({ roomCode, playerRole, currentRoom, startGa
             <div>
               <p className="font-bold text-gray-800">El Lider</p>
               <p className="text-gray-700">{currentRoom?.king?.name}</p>
+            </div>
+          </div>
+
+          {/* Configuración de la partida */}
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-purple-500" />
+                <p className="font-bold text-gray-800">Configuración</p>
+              </div>
+              {playerRole === "king" && (
+                <button
+                  onClick={() => setShowConfig(true)}
+                  className="text-sm text-purple-600 font-semibold hover:text-purple-800 border-0 bg-transparent p-1 active:scale-95 transition-all"
+                >
+                  Editar
+                </button>
+              )}
+            </div>
+            <div className="flex gap-4 mt-2">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">{currentRoom?.config?.rounds ?? gameConfig.rounds}</p>
+                <p className="text-xs text-gray-500">Rondas</p>
+              </div>
+              <div className="w-px bg-purple-200" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">{currentRoom?.config?.pointsPerAnswer ?? gameConfig.pointsPerAnswer}</p>
+                <p className="text-xs text-gray-500">Pts por acierto</p>
+              </div>
+              <div className="w-px bg-purple-200" />
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600">
+                  {(currentRoom?.config?.rounds ?? gameConfig.rounds) * (currentRoom?.config?.pointsPerAnswer ?? gameConfig.pointsPerAnswer)}
+                </p>
+                <p className="text-xs text-gray-500">Máximo pts</p>
+              </div>
             </div>
           </div>
 

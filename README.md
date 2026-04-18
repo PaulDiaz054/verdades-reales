@@ -2,7 +2,7 @@
 
 Un juego multijugador interactivo donde los jugadores compiten por demostrar qué tan bien conocen al "Lider". Perfecto para fiestas, reuniones familiares o para conocerse mejor entre amigos.
 
-![Versión](https://img.shields.io/badge/versión-1.1.3-blue.svg)
+![Versión](https://img.shields.io/badge/versión-1.1.4-blue.svg)
 ![Licencia](https://img.shields.io/badge/licencia-BSL%201.1-orange.svg)
 
 ## 📋 Tabla de Contenidos

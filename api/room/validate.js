@@ -4,31 +4,29 @@ import { setCors, parseRoom } from "./_helpers.js";
 const redis = Redis.fromEnv();
 
 const VALIDATE_SCRIPT = `
-local key        = KEYS[1]
-local aspirantId = ARGV[1]
-local isCorrect  = ARGV[2]
-local now        = ARGV[3]
+local key            = KEYS[1]
+local aspirantId     = ARGV[1]
+local isCorrect      = ARGV[2]
+local now            = ARGV[3]
+local pointsPerAnswer = tonumber(ARGV[4]) or 1
 
 local raw = redis.call('GET', key)
 if not raw then return {err = 'NOT_FOUND'} end
 
 local room = cjson.decode(raw)
 
--- Idempotente
 if not room.answeredAspirants then room.answeredAspirants = {} end
 for _, id in ipairs(room.answeredAspirants) do
   if tostring(id) == tostring(aspirantId) then return cjson.encode(room) end
 end
 
--- Actualizar score
 if isCorrect == '1' then
   if not room.scores then room.scores = {} end
-  room.scores[aspirantId] = (room.scores[aspirantId] or 0) + 1
+  room.scores[aspirantId] = (room.scores[aspirantId] or 0) + pointsPerAnswer
 end
 
 table.insert(room.answeredAspirants, aspirantId)
 
--- Mover respuesta de currentAnswers → answers[aspirantId]
 if not room.answers then room.answers = {} end
 if not room.answers[aspirantId] then room.answers[aspirantId] = {} end
 
@@ -46,7 +44,6 @@ for _, a in ipairs(room.currentAnswers or {}) do
 end
 room.currentAnswers = remaining
 
--- Avanzar pregunta si todos fueron validados
 local total     = room.aspirants and #room.aspirants or 0
 local validated = #room.answeredAspirants
 
@@ -58,7 +55,7 @@ if validated >= total then
   local totalQ = room.questions and #room.questions or 0
   if tonumber(room.currentQuestionIndex) >= totalQ then
     room.status     = 'finished'
-    room.finishedAt = now   -- fecha y hora de fin
+    room.finishedAt = now
   end
 end
 
@@ -72,7 +69,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
 
-  const { roomCode, aspirantId, isCorrect } = req.body;
+  const { roomCode, aspirantId, isCorrect, pointsPerAnswer = 1 } = req.body;
   if (!roomCode || !aspirantId)
     return res.status(400).json({ error: "Missing fields" });
 
@@ -83,7 +80,7 @@ export default async function handler(req, res) {
     const result = await redis.eval(
       VALIDATE_SCRIPT,
       [key],
-      [aspirantId, isCorrect ? "1" : "0", now],
+      [aspirantId, isCorrect ? "1" : "0", now, String(pointsPerAnswer)],
     );
     const room = parseRoom(result);
     if (!room) return res.status(404).json({ error: "Sala no encontrada" });

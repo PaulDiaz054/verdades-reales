@@ -2,16 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import questionsData from "../assets/questions_es.json";
 import storage from "../services/storage.js";
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
-
 const GENERIC_QUESTIONS = questionsData.genericas;
-const QUESTIONS_LIMIT = 10;
 
 const BASE_URL = import.meta.env.VITE_SERVER_URL
   ? `${import.meta.env.VITE_SERVER_URL}/api/room`
   : "/api/room";
 
-// ─── Auxiliares ──────────────────────────────────────────────────────────────────
+export const DEFAULT_CONFIG = {
+  rounds: 10,
+  pointsPerAnswer: 1,
+};
 
 function shuffleArray(array) {
   const out = [...array];
@@ -40,56 +40,36 @@ async function apiPost(path, body) {
 }
 
 function getPollingInterval(gameState, currentRoom) {
-  if (!currentRoom || gameState === "menu" || gameState === "results")
-    return null;
-  if (gameState === "lobby") return 3000;
-  if (gameState === "playing") return 3000;
-
+  if (!currentRoom || gameState === "menu" || gameState === "results") return null;
   return 3000;
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export default function useGameRoom() {
-  const [gameState, setGameState] = useState("menu");
-  const [roomCode, setRoomCode] = useState("");
-  const [playerName, setPlayerName] = useState("");
-  const [playerRole, setPlayerRole] = useState(null);
-  const [currentRoom, setCurrentRoom] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [gameState, setGameState]           = useState("menu");
+  const [roomCode, setRoomCode]             = useState("");
+  const [playerName, setPlayerName]         = useState("");
+  const [playerRole, setPlayerRole]         = useState(null);
+  const [currentRoom, setCurrentRoom]       = useState(null);
+  const [loading, setLoading]               = useState(false);
   const [answeredQuestions, setAnsweredQuestions] = useState(new Set());
+  const [gameConfig, setGameConfig]         = useState(DEFAULT_CONFIG);
 
   const refs = {
-    roomCode: useRef(roomCode),
+    roomCode:    useRef(roomCode),
     currentRoom: useRef(currentRoom),
-    gameState: useRef(gameState),
+    gameState:   useRef(gameState),
   };
-  useEffect(() => {
-    refs.roomCode.current = roomCode;
-  }, [roomCode]);
-  useEffect(() => {
-    refs.currentRoom.current = currentRoom;
-  }, [currentRoom]);
-  useEffect(() => {
-    refs.gameState.current = gameState;
-  }, [gameState]);
+  useEffect(() => { refs.roomCode.current    = roomCode;    }, [roomCode]);
+  useEffect(() => { refs.currentRoom.current = currentRoom; }, [currentRoom]);
+  useEffect(() => { refs.gameState.current   = gameState;   }, [gameState]);
 
-  // ── Polling ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (gameState === "menu" || gameState === "results" || !roomCode) return;
     const interval = getPollingInterval(gameState, currentRoom);
     if (!interval) return;
     const timer = setInterval(loadRoom, interval);
     return () => clearInterval(timer);
-  }, [
-    gameState,
-    playerRole,
-    currentRoom?.currentAnswers?.length,
-    roomCode,
-    playerName,
-  ]);
-
-  // ── Acciones ───────────────────────────────────────────────────────────────
+  }, [gameState, playerRole, currentRoom?.currentAnswers?.length, roomCode, playerName]);
 
   async function loadRoom() {
     const code = refs.roomCode.current;
@@ -110,11 +90,12 @@ export default function useGameRoom() {
   async function createRoom(mode) {
     if (!playerName.trim()) return alert("Por favor ingresa tu nombre");
 
-    const questions = shuffleArray(GENERIC_QUESTIONS).slice(0, QUESTIONS_LIMIT);
+    const questions = shuffleArray(GENERIC_QUESTIONS).slice(0, gameConfig.rounds);
     const code = generateRoomCode();
     const room = {
       code,
       mode,
+      config: gameConfig,
       king: { name: playerName, id: Date.now().toString() },
       aspirants: [],
       questions,
@@ -179,13 +160,9 @@ export default function useGameRoom() {
 
   async function submitAnswer(answer) {
     const question = currentRoom.questions[currentRoom.currentQuestionIndex];
-    const aspirantId = currentRoom.aspirants.find(
-      (a) => a.name === playerName,
-    )?.id;
+    const aspirantId = currentRoom.aspirants.find((a) => a.name === playerName)?.id;
 
-    setAnsweredQuestions((prev) =>
-      new Set(prev).add(currentRoom.currentQuestionIndex),
-    );
+    setAnsweredQuestions((prev) => new Set(prev).add(currentRoom.currentQuestionIndex));
 
     try {
       const { room } = await apiPost("answer", {
@@ -203,14 +180,27 @@ export default function useGameRoom() {
 
   async function validateAnswer(aspirantId, isCorrect) {
     try {
+      const pointsPerAnswer = currentRoom.config?.pointsPerAnswer ?? 1;
       const { room } = await apiPost("validate", {
         roomCode,
         aspirantId,
         isCorrect,
+        pointsPerAnswer,
       });
       setCurrentRoom(room);
     } catch (err) {
       alert("Error al validar respuesta: " + err.message);
+    }
+  }
+
+  async function updateRoomConfig(newConfig) {
+    try {
+      const questions = shuffleArray(GENERIC_QUESTIONS).slice(0, newConfig.rounds);
+      const room = { ...currentRoom, config: newConfig, questions };
+      await storage.set(`room_${roomCode}`, JSON.stringify(room));
+      setCurrentRoom(room);
+    } catch (err) {
+      alert("Error al actualizar configuración: " + err.message);
     }
   }
 
@@ -230,13 +220,16 @@ export default function useGameRoom() {
     currentRoom,
     loading,
     answeredQuestions,
+    gameConfig,
     setRoomCode,
     setPlayerName,
+    setGameConfig,
     createRoom,
     joinRoom,
     startGame,
     submitAnswer,
     validateAnswer,
+    updateRoomConfig,
     resetGame,
   };
 }

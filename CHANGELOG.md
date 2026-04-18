@@ -10,6 +10,15 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/).
 
 ---
 
+## [1.1.4] - 2026-03-05
+### Corregido
+- Ahora se muestra correctamente las respuestas de los reales.
+
+### Añadido
+- limite de letras en las respuestas de texto.
+
+---
+
 ## [1.1.3] - 2026-03-05
 ### Añadido
 - Instrucciones para el rey.
