@@ -4,10 +4,10 @@ import { setCors, parseRoom } from "./_helpers.js";
 const redis = Redis.fromEnv();
 
 const VALIDATE_SCRIPT = `
-local key            = KEYS[1]
-local aspirantId     = ARGV[1]
-local isCorrect      = ARGV[2]
-local now            = ARGV[3]
+local key             = KEYS[1]
+local aspirantId      = ARGV[1]
+local isCorrect       = ARGV[2]
+local now             = ARGV[3]
 local pointsPerAnswer = tonumber(ARGV[4]) or 1
 
 local raw = redis.call('GET', key)
@@ -44,7 +44,24 @@ for _, a in ipairs(room.currentAnswers or {}) do
 end
 room.currentAnswers = remaining
 
-local total     = room.aspirants and #room.aspirants or 0
+-- Asegurar que todos los jugadores tienen entrada en scores (aunque sea 0)
+-- para que aparezcan en la tabla de resultados
+if not room.scores then room.scores = {} end
+for _, a in ipairs(room.aspirants or {}) do
+  if room.scores[a.id] == nil then room.scores[a.id] = 0 end
+end
+local adminIsKing = room.admin and room.king and (tostring(room.admin.id) == tostring(room.king.id))
+if room.admin and not adminIsKing then
+  if room.scores[room.admin.id] == nil then room.scores[room.admin.id] = 0 end
+end
+
+-- Total real de jugadores que responden:
+-- aspirants + el admin si NO es el lider
+local total = room.aspirants and #room.aspirants or 0
+if room.admin and not adminIsKing then
+  total = total + 1
+end
+
 local validated = #room.answeredAspirants
 
 if validated >= total then
@@ -52,10 +69,20 @@ if validated >= total then
   room.answeredAspirants    = {}
   room.currentAnswers       = {}
 
-  local totalQ = room.questions and #room.questions or 0
+  local totalQ
+  if room.mode == 'custom' then
+    totalQ = (room.config and tonumber(room.config.rounds)) or 10
+  else
+    totalQ = room.questions and #room.questions or 0
+  end
+
   if tonumber(room.currentQuestionIndex) >= totalQ then
     room.status     = 'finished'
     room.finishedAt = now
+  else
+    if room.mode == 'custom' then
+      room.status = 'waiting_question'
+    end
   end
 end
 

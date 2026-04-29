@@ -1,10 +1,10 @@
-import { Crown, Users, Play, Settings } from "lucide-react";
+import { Crown, Users, Play, Settings, Shuffle } from "lucide-react";
 import AdBanner from "./AdBanner";
 import GameConfigModal from "./GameConfigModal";
 import { useState } from "react";
 
 export default function LobbyScreen({ roomCode, playerRole, currentRoom, startGame, gameConfig, setGameConfig, updateRoomConfig }) {
-  const aspirants = currentRoom?.aspirants || [];
+  const aspirants  = currentRoom?.aspirants || [];
   const [showConfig, setShowConfig] = useState(false);
 
   async function handleConfigSave(newConfig) {
@@ -13,13 +13,14 @@ export default function LobbyScreen({ roomCode, playerRole, currentRoom, startGa
     setShowConfig(false);
   }
 
+  const isAdmin = playerRole === "admin";
+
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-purple-50 to-indigo-100">
 
       {showConfig && (
         <GameConfigModal
           config={gameConfig}
-          onChange={() => {}}
           onClose={() => setShowConfig(false)}
           onSave={handleConfigSave}
         />
@@ -38,26 +39,25 @@ export default function LobbyScreen({ roomCode, playerRole, currentRoom, startGa
             </div>
           </div>
 
-          <div className="bg-yellow-100 border-2 border-yellow-400 rounded-xl p-4 mb-4 flex items-center gap-2">
-            <Crown className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+          {/* Admin badge */}
+          <div className="bg-indigo-100 border-2 border-indigo-300 rounded-xl p-3 mb-4 flex items-center gap-2">
+            <Crown className="w-5 h-5 text-indigo-500 flex-shrink-0" />
             <div>
-              <p className="font-bold text-gray-800">El Lider</p>
-              <p className="text-gray-700">{currentRoom?.king?.name}</p>
+              <p className="text-xs text-indigo-500 font-semibold">Administrador</p>
+              <p className="font-bold text-gray-800">{currentRoom?.admin?.name}</p>
             </div>
           </div>
 
-          {/* Configuración de la partida */}
+          {/* Configuración */}
           <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Settings className="w-5 h-5 text-purple-500" />
                 <p className="font-bold text-gray-800">Configuración</p>
               </div>
-              {playerRole === "king" && (
-                <button
-                  onClick={() => setShowConfig(true)}
-                  className="text-sm text-purple-600 font-semibold hover:text-purple-800 border-0 bg-transparent p-1 active:scale-95 transition-all"
-                >
+              {isAdmin && (
+                <button onClick={() => setShowConfig(true)}
+                  className="text-sm text-purple-600 font-semibold hover:text-purple-800 border-0 bg-transparent p-1 active:scale-95 transition-all">
                   Editar
                 </button>
               )}
@@ -79,13 +79,21 @@ export default function LobbyScreen({ roomCode, playerRole, currentRoom, startGa
                 </p>
                 <p className="text-xs text-gray-500">Máximo pts</p>
               </div>
+              <div className="w-px bg-purple-200" />
+              <div className="text-center">
+                <p className="text-sm font-bold text-purple-600 mt-1">
+                  {(currentRoom?.config?.mode ?? gameConfig.mode) === "custom" ? "Personalizado" : "Genérico"}
+                </p>
+                <p className="text-xs text-gray-500">Modo</p>
+              </div>
             </div>
           </div>
 
+          {/* Jugadores */}
           <div className="bg-blue-100 border-2 border-blue-400 rounded-xl p-4 mb-5">
             <div className="flex items-center gap-2 mb-3">
               <Users className="w-6 h-6 text-blue-600" />
-              <p className="font-bold text-gray-800">Reales ({aspirants.length})</p>
+              <p className="font-bold text-gray-800">Jugadores ({aspirants.length})</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {aspirants.length ? (
@@ -95,22 +103,22 @@ export default function LobbyScreen({ roomCode, playerRole, currentRoom, startGa
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-sm col-span-2">Esperando Reales...</p>
+                <p className="text-gray-500 text-sm col-span-2">Esperando jugadores...</p>
               )}
             </div>
           </div>
 
-          {playerRole === "king" ? (
+          {isAdmin ? (
             <button
               onClick={startGame}
               disabled={!aspirants.length}
-              className="w-full bg-green-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-green-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-green-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-green-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border-0"
             >
               <Play className="w-6 h-6" />
               Iniciar Juego
             </button>
           ) : (
-            <p className="text-center text-gray-600">Esperando que el Lider inicie el juego...</p>
+            <p className="text-center text-gray-600">Esperando que el administrador inicie el juego...</p>
           )}
 
         </div>

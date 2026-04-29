@@ -1,8 +1,12 @@
 import { X, Settings } from "lucide-react";
 import { useState } from "react";
 
-const ROUNDS_OPTIONS = [5, 10, 15, 20];
-const POINTS_OPTIONS = [1, 2, 3, 5];
+const ROUNDS_OPTIONS      = [5, 10, 15, 20];
+const POINTS_OPTIONS      = [1, 2, 3, 5];
+const MODE_OPTIONS = [
+  { value: "generic", label: "Preguntas Genéricas", desc: "Se usan preguntas predefinidas al azar" },
+  { value: "custom",  label: "Modo Personalizado",  desc: "El King escribe cada pregunta en vivo" },
+];
 
 export default function GameConfigModal({ config, onClose, onSave }) {
   const [local, setLocal] = useState({ ...config });
@@ -22,10 +26,27 @@ export default function GameConfigModal({ config, onClose, onSave }) {
           </button>
         </div>
 
+        {/* Modo de juego */}
         <div className="mb-5">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Número de rondas
-          </label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Modo de juego</label>
+          <div className="space-y-2">
+            {MODE_OPTIONS.map((m) => (
+              <button key={m.value}
+                onClick={() => setLocal((p) => ({ ...p, mode: m.value }))}
+                className={`w-full p-3 rounded-xl text-left transition-all border-2 active:scale-95
+                  ${local.mode === m.value
+                    ? "border-purple-500 bg-purple-50"
+                    : "border-gray-200 bg-gray-50 hover:border-purple-300"}`}>
+                <p className={`font-bold text-sm ${local.mode === m.value ? "text-purple-700" : "text-gray-700"}`}>{m.label}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{m.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Rondas */}
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Número de rondas</label>
           <div className="grid grid-cols-4 gap-2">
             {ROUNDS_OPTIONS.map((n) => (
               <button key={n}
@@ -38,13 +59,16 @@ export default function GameConfigModal({ config, onClose, onSave }) {
               </button>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-1">Se elegirán {local.rounds} preguntas al azar</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {local.mode === "custom"
+              ? `El King escribirá ${local.rounds} preguntas`
+              : `Se elegirán ${local.rounds} preguntas al azar`}
+          </p>
         </div>
 
+        {/* Puntos */}
         <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Puntos por respuesta correcta
-          </label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Puntos por respuesta correcta</label>
           <div className="grid grid-cols-4 gap-2">
             {POINTS_OPTIONS.map((n) => (
               <button key={n}
@@ -60,9 +84,10 @@ export default function GameConfigModal({ config, onClose, onSave }) {
           <p className="text-xs text-gray-500 mt-1">Cada acierto suma {local.pointsPerAnswer} punto{local.pointsPerAnswer > 1 ? "s" : ""}</p>
         </div>
 
+        {/* Resumen */}
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 mb-5">
           <p className="text-sm text-purple-800 font-medium text-center">
-            Partida de <span className="font-bold">{local.rounds} rondas</span> · {local.pointsPerAnswer} pto{local.pointsPerAnswer > 1 ? "s" : ""} por acierto · Máximo <span className="font-bold">{local.rounds * local.pointsPerAnswer} pts</span>
+            {local.mode === "custom" ? "Personalizado" : "Genérico"} · <span className="font-bold">{local.rounds} rondas</span> · {local.pointsPerAnswer} pto{local.pointsPerAnswer > 1 ? "s" : ""} por acierto · Máximo <span className="font-bold">{local.rounds * local.pointsPerAnswer} pts</span>
           </p>
         </div>
 

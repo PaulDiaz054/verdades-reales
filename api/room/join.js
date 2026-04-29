@@ -38,14 +38,14 @@ export default async function handler(req, res) {
   if (!roomCode || !playerName)
     return res.status(400).json({ error: "Missing fields" });
 
-  const key = `room_${roomCode.toUpperCase()}`;
+  const key        = `room_${roomCode.toUpperCase()}`;
   const aspirantId = `${Date.now()}${Math.random().toString(36).slice(2, 5)}`;
 
   try {
     const result = await redis.eval(JOIN_SCRIPT, [key], [playerName, aspirantId]);
-    const room = parseRoom(result);
+    const room   = parseRoom(result);
     if (!room) return res.status(404).json({ error: "Sala no encontrada" });
-    return res.status(200).json({ room });
+    return res.status(200).json({ room, aspirantId });
   } catch (err) {
     console.error("join:", err);
     return res.status(500).json({ error: err.message });

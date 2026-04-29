@@ -24,12 +24,12 @@ export default function MenuScreen({ playerName, setPlayerName, roomCode, setRoo
           />
 
           <button
-            onClick={() => createRoom("generic")}
+            onClick={createRoom}
             disabled={loading}
             className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-purple-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mb-5"
           >
             <Crown className="w-6 h-6 flex-shrink-0" />
-            Partida Rápida (Preguntas Genéricas)
+            Crear Sala
           </button>
 
           <div className="border-t-2 pt-5">

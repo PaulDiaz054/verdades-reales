@@ -1,4 +1,4 @@
-import { Trophy, Check, X, Clock } from "lucide-react";
+import { Trophy, Check, X, Clock, RotateCcw } from "lucide-react";
 import AdBanner from "./AdBanner";
 
 function formatDuration(startedAt, finishedAt) {
@@ -10,17 +10,27 @@ function formatDuration(startedAt, finishedAt) {
   return `${m}m ${s}s`;
 }
 
-export default function ResultsScreen({ currentRoom, resetGame }) {
+export default function ResultsScreen({ currentRoom, playerRole, resetGame, rematch }) {
   if (!currentRoom) return null;
 
   const duration = formatDuration(currentRoom.startedAt, currentRoom.finishedAt);
+  const isAdmin  = playerRole === "admin" || playerRole === "admin_king";
+
+  // DEBUG temporal — borrar después
+
+  // Construir mapa de todos los jugadores: aspirants + admin + king (deduplicado)
+  const playerMap = new Map();
+  (currentRoom.aspirants || []).forEach((p) => playerMap.set(p.id, p));
+  if (currentRoom.admin) playerMap.set(currentRoom.admin.id, currentRoom.admin);
+  if (currentRoom.king)  playerMap.set(currentRoom.king.id,  currentRoom.king);
+
 
   const sorted = Object.entries(currentRoom.scores || {})
-    .map(([id, score]) => ({
-      aspirant: currentRoom.aspirants?.find((a) => a.id === id),
-      score,
-      answers: currentRoom.answers?.[id] || [],
-    }))
+    .map(([id, score]) => {
+      const found = playerMap.get(id);
+      return { aspirant: found, score, answers: currentRoom.answers?.[id] || [] };
+    })
+    .filter((e) => e.aspirant && e.aspirant.id !== currentRoom.king?.id)
     .sort((a, b) => b.score - a.score);
 
   const winner = sorted[0];
@@ -40,14 +50,14 @@ export default function ResultsScreen({ currentRoom, resetGame }) {
             {duration && (
               <div className="flex items-center justify-center gap-2 text-gray-500 mt-1">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm">Duración de la partida: <span className="font-semibold text-gray-700">{duration}</span></span>
+                <span className="text-sm">Duración: <span className="font-semibold text-gray-700">{duration}</span></span>
               </div>
             )}
 
             {winner && (
               <div className="bg-yellow-100 border-2 border-yellow-400 rounded-xl p-4 mt-4">
                 <p className="text-2xl font-bold text-gray-800 truncate">{winner.aspirant?.name}</p>
-                <p className="text-gray-600">¡Es quien mejor conoce al Lider!</p>
+                <p className="text-gray-600">¡Es quien mejor conoce al Líder!</p>
                 <p className="text-4xl font-bold text-purple-600 mt-2">{winner.score} puntos</p>
               </div>
             )}
@@ -56,7 +66,7 @@ export default function ResultsScreen({ currentRoom, resetGame }) {
           <h3 className="font-bold text-gray-700 text-center mb-3">Tabla Final:</h3>
           <div className="space-y-3 mb-5">
             {sorted.map((entry, idx) => (
-              <div key={entry.aspirant?.id} className="bg-gray-50 rounded-xl p-3">
+              <div key={idx} className="bg-gray-50 rounded-xl p-3">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-2xl font-bold text-gray-400 flex-shrink-0">#{idx + 1}</span>
@@ -82,10 +92,25 @@ export default function ResultsScreen({ currentRoom, resetGame }) {
             ))}
           </div>
 
-          <button onClick={resetGame}
-            className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-purple-700 active:scale-95 transition-all">
-            Volver al Menú
-          </button>
+          {/* Botones */}
+          <div className="space-y-3">
+            {isAdmin && (
+              <button onClick={rematch}
+                className="w-full bg-purple-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-purple-700 active:scale-95 transition-all flex items-center justify-center gap-2 border-0">
+                <RotateCcw className="w-5 h-5" />
+                Revancha
+              </button>
+            )}
+            {!isAdmin && (
+              <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 text-center">
+                <p className="text-gray-600 text-sm">Esperando que el administrador decida...</p>
+              </div>
+            )}
+            <button onClick={resetGame}
+              className="w-full bg-gray-100 text-gray-700 p-4 rounded-xl font-bold text-lg hover:bg-gray-200 active:scale-95 transition-all border-0">
+              Volver al Menú
+            </button>
+          </div>
 
         </div>
       </div>
