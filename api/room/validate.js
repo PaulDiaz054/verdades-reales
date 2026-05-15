@@ -4,11 +4,13 @@ import { setCors, parseRoom } from "./_helpers.js";
 const redis = Redis.fromEnv();
 
 const VALIDATE_SCRIPT = `
-local key             = KEYS[1]
-local aspirantId      = ARGV[1]
-local isCorrect       = ARGV[2]
-local now             = ARGV[3]
-local pointsPerAnswer = tonumber(ARGV[4]) or 1
+local key            = KEYS[1]
+local aspirantId     = ARGV[1]
+local isCorrect      = ARGV[2]
+local now            = ARGV[3]
+local globalPoints   = tonumber(ARGV[4]) or 1
+local penaltyEnabled = ARGV[5]
+local globalPenalty  = tonumber(ARGV[6]) or globalPoints
 
 local raw = redis.call('GET', key)
 if not raw then return {err = 'NOT_FOUND'} end
@@ -20,9 +22,29 @@ for _, id in ipairs(room.answeredAspirants) do
   if tostring(id) == tostring(aspirantId) then return cjson.encode(room) end
 end
 
+-- Leer puntos de la pregunta actual (pueden sobreescribir el global)
+local currentQ = nil
+local qIndex = tonumber(room.currentQuestionIndex) or 0
+if room.questions and room.questions[qIndex + 1] then
+  currentQ = room.questions[qIndex + 1]
+end
+
+local pointsToUse  = globalPoints
+local penaltyToUse = globalPenalty
+if currentQ then
+  if currentQ.points  then pointsToUse  = tonumber(currentQ.points)  or globalPoints  end
+  if currentQ.penalty then penaltyToUse = tonumber(currentQ.penalty) or globalPenalty end
+end
+
+if not room.scores then room.scores = {} end
+
 if isCorrect == '1' then
-  if not room.scores then room.scores = {} end
-  room.scores[aspirantId] = (room.scores[aspirantId] or 0) + pointsPerAnswer
+  room.scores[aspirantId] = (room.scores[aspirantId] or 0) + pointsToUse
+else
+  if penaltyEnabled == '1' and penaltyToUse > 0 then
+    local current  = room.scores[aspirantId] or 0
+    room.scores[aspirantId] = current - penaltyToUse
+  end
 end
 
 table.insert(room.answeredAspirants, aspirantId)
@@ -39,14 +61,14 @@ for _, a in ipairs(room.currentAnswers or {}) do
       questionId = a.questionId,
       answer     = a.answer,
       isCorrect  = (isCorrect == '1'),
+      points     = isCorrect == '1' and pointsToUse or 0,
+      penalty    = isCorrect ~= '1' and penaltyToUse or 0,
     })
   end
 end
 room.currentAnswers = remaining
 
--- Asegurar que todos los jugadores tienen entrada en scores (aunque sea 0)
--- para que aparezcan en la tabla de resultados
-if not room.scores then room.scores = {} end
+-- Garantizar entradas en scores para todos los jugadores
 for _, a in ipairs(room.aspirants or {}) do
   if room.scores[a.id] == nil then room.scores[a.id] = 0 end
 end
@@ -55,8 +77,6 @@ if room.admin and not adminIsKing then
   if room.scores[room.admin.id] == nil then room.scores[room.admin.id] = 0 end
 end
 
--- Total real de jugadores que responden:
--- aspirants + el admin si NO es el lider
 local total = room.aspirants and #room.aspirants or 0
 if room.admin and not adminIsKing then
   total = total + 1
@@ -96,7 +116,14 @@ export default async function handler(req, res) {
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
 
-  const { roomCode, aspirantId, isCorrect, pointsPerAnswer = 1 } = req.body;
+  const {
+    roomCode,
+    aspirantId,
+    isCorrect,
+    pointsPerAnswer = 1,
+    penaltyEnabled  = false,
+  } = req.body;
+
   if (!roomCode || !aspirantId)
     return res.status(400).json({ error: "Missing fields" });
 
@@ -107,7 +134,14 @@ export default async function handler(req, res) {
     const result = await redis.eval(
       VALIDATE_SCRIPT,
       [key],
-      [aspirantId, isCorrect ? "1" : "0", now, String(pointsPerAnswer)],
+      [
+        aspirantId,
+        isCorrect ? "1" : "0",
+        now,
+        String(pointsPerAnswer),
+        penaltyEnabled ? "1" : "0",
+        String(pointsPerAnswer), // globalPenalty = mismo valor que globalPoints por defecto
+      ],
     );
     const room = parseRoom(result);
     if (!room) return res.status(404).json({ error: "Sala no encontrada" });
